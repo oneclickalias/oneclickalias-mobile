@@ -1,0 +1,27 @@
+OneClickAlias gives you email aliases. Hand out an alias instead of your real address; mail sent to the alias is forwarded to your inbox. If an alias gets spam, delete it.
+
+<b>No password, no contact details</b>
+Your account is a random 16-digit account number. There is no username, no password and no email address to sign up with. Keep the number safe: it is the only way into your account.
+
+<b>What the app does</b>
+<ul>
+<li>Open the app, tap an alias, done: a fresh alias is ready for each of your addresses, and the next one appears as soon as you copy</li>
+<li>Turn tracker blocking on or off per alias, and delete aliases you no longer need</li>
+<li>Add recipient addresses and confirm them through the link we email you</li>
+<li>Save a new account number straight to your password manager</li>
+<li>Sign in by scanning the QR code from the dashboard on oneclickalias.com, without typing the account number</li>
+<li>Sign in a browser: scan the code on the oneclickalias.com login page and approve it in the app</li>
+<li>See your signed-in devices and sign out one of them or all</li>
+<li>Optional app lock with your fingerprint, face or screen lock</li>
+<li>Delete your account</li>
+</ul>
+
+<b>Privacy</b>
+<ul>
+<li>No analytics, no crash reporting, no ads</li>
+<li>No Google Play Services: the app works on devices without Google apps</li>
+<li>Sign-in tokens are encrypted with a key from the Android Keystore and are excluded from backups</li>
+<li>The account number is never stored on the device</li>
+</ul>
+
+The app uses the OneClickAlias service at oneclickalias.com. Creating aliases needs a paid account; payment is handled on the website, not in the app.

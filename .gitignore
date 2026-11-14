@@ -1,0 +1,31 @@
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
+*.iml
+
+# Gradle / Android
+.gradle/
+.kotlin/
+build/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Signing material never goes into Git
+*.jks
+*.keystore
+keystore.properties
+
+# iOS (later)
+xcuserdata/
+DerivedData/
+
+# Release output of scripts/release-android.sh
+dist/

@@ -1,0 +1,7 @@
+First release.
+- Create an account or log in with your account number, or scan the QR code from the dashboard
+- Save the account number to your password manager
+- A ready alias for each address: tap it to copy, the next one appears
+- Sign in a browser by scanning the code on the login page
+- Tracker blocking per alias, delete aliases
+- Recipients, signed-in devices, account deletion, optional app lock

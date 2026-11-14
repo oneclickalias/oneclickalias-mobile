@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Black, so the white cursor stands alone -->
+    <color name="ic_launcher_background">#000000</color>
+    <!-- Token "background", shown before Compose draws the first frame -->
+    <color name="window_background">#FFFFFF</color>
+</resources>
