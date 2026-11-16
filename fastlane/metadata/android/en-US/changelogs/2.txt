@@ -1,0 +1,1 @@
+- The app now always uses the dark theme
