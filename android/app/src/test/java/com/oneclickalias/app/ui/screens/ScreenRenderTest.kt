@@ -58,8 +58,8 @@ class ScreenRenderTest {
     @get:Rule
     val compose = createComposeRule()
 
-    private fun renderCreateAccount(name: String, darkTheme: Boolean) = render(name) {
-        OcaTheme(darkTheme = darkTheme) {
+    private fun renderCreateAccount(name: String) = render(name) {
+        OcaTheme {
             CreateAccountScreen(
                 state = CreateAccountUiState.Ready(accountNumber = "4711000012345678", saved = true),
                 onBack = {},
@@ -74,12 +74,12 @@ class ScreenRenderTest {
         }
     }
 
-    private fun renderPaymentNotice(name: String, darkTheme: Boolean) = render(name) {
+    private fun renderPaymentNotice(name: String) = render(name) {
         val home = Recipient("r-home", "home@example.com", true, "2026-11-01T10:00:00Z")
         val aliases = listOf("quiet-otter-4821", "brave-falcon-1907", "gentle-river-3310").mapIndexed { i, word ->
             Alias("a$i", "$word@alias.oneclickalias.com", home.email, home.id, true, "", "")
         }
-        OcaTheme(darkTheme = darkTheme) {
+        OcaTheme {
             AliasesScreen(
                 state = AliasesUiState(
                     aliases = aliases,
@@ -91,8 +91,8 @@ class ScreenRenderTest {
         }
     }
 
-    private fun renderRecipientsPaymentNotice(name: String, darkTheme: Boolean) = render(name) {
-        OcaTheme(darkTheme = darkTheme) {
+    private fun renderRecipientsPaymentNotice(name: String) = render(name) {
+        OcaTheme {
             RecipientsScreen(
                 state = RecipientsUiState(
                     recipients = listOf(
@@ -107,8 +107,8 @@ class ScreenRenderTest {
         }
     }
 
-    private fun renderLock(name: String, darkTheme: Boolean, canAuthenticate: Boolean = true) = render(name) {
-        OcaTheme(darkTheme = darkTheme) {
+    private fun renderLock(name: String, canAuthenticate: Boolean = true) = render(name) {
+        OcaTheme {
             LockScreen(
                 state = AppLockState(ready = true, enabled = true, locked = true, canAuthenticate = canAuthenticate),
                 onUnlock = {},
@@ -117,8 +117,8 @@ class ScreenRenderTest {
         }
     }
 
-    private fun renderAccountWithAppLock(name: String, darkTheme: Boolean) = render(name) {
-        OcaTheme(darkTheme = darkTheme) {
+    private fun renderAccountWithAppLock(name: String) = render(name) {
+        OcaTheme {
             AccountScreen(
                 state = AccountUiState(),
                 versionName = "0.1.0",
@@ -128,8 +128,8 @@ class ScreenRenderTest {
         }
     }
 
-    private fun renderNewAccountPaymentNotice(name: String, darkTheme: Boolean) = render(name) {
-        OcaTheme(darkTheme = darkTheme) {
+    private fun renderNewAccountPaymentNotice(name: String) = render(name) {
+        OcaTheme {
             AliasesScreen(
                 state = AliasesUiState(
                     list = ListStatus.Ready,
@@ -140,24 +140,20 @@ class ScreenRenderTest {
         }
     }
 
-    private fun renderPairing(
-        name: String,
-        darkTheme: Boolean,
-        state: PairingUiState,
-        camera: CameraAccess = CameraAccess.Granted
-    ) = render(name) {
-        OcaTheme(darkTheme = darkTheme) {
-            PairingScreen(
-                state = state,
-                camera = camera,
-                callbacks = PairingCallbacks(),
-                cameraPreview = { _, modifier -> Box(modifier.background(Color(0xFF808080))) }
-            )
+    private fun renderPairing(name: String, state: PairingUiState, camera: CameraAccess = CameraAccess.Granted) =
+        render(name) {
+            OcaTheme {
+                PairingScreen(
+                    state = state,
+                    camera = camera,
+                    callbacks = PairingCallbacks(),
+                    cameraPreview = { _, modifier -> Box(modifier.background(Color(0xFF808080))) }
+                )
+            }
         }
-    }
 
-    private fun renderLogin(name: String, darkTheme: Boolean, state: LoginUiState = LoginUiState()) = render(name) {
-        OcaTheme(darkTheme = darkTheme) {
+    private fun renderLogin(name: String, state: LoginUiState = LoginUiState()) = render(name) {
+        OcaTheme {
             LoginScreen(
                 state = state,
                 onInput = {},
@@ -177,9 +173,9 @@ class ScreenRenderTest {
     private fun alias(n: Int, name: String, to: Recipient) =
         Alias("a$n", "$name@rmails.net", to.email, to.id, true, "", "")
 
-    private fun renderNewAlias(name: String, darkTheme: Boolean, cards: Int) = render(name) {
+    private fun renderNewAlias(name: String, cards: Int) = render(name) {
         val names = listOf("quiet-otter-4821", "brave-falcon-1907", "gentle-river-3310")
-        OcaTheme(darkTheme = darkTheme) {
+        OcaTheme {
             HomeFrame(tab = HomeTab.NewAlias, onSelectTab = {}) {
                 CopyScreen(
                     state = CopyUiState(
@@ -194,7 +190,7 @@ class ScreenRenderTest {
         }
     }
 
-    private fun renderAliases(name: String, darkTheme: Boolean) = render(name) {
+    private fun renderAliases(name: String) = render(name) {
         val names = listOf(
             "flogging-canon-2062",
             "steed-musky-7169",
@@ -205,7 +201,7 @@ class ScreenRenderTest {
             "psychic-rewrite-3039",
             "steadying-cube-8885"
         )
-        OcaTheme(darkTheme = darkTheme) {
+        OcaTheme {
             HomeFrame(tab = HomeTab.Aliases, onSelectTab = {}) {
                 AliasesScreen(
                     state = AliasesUiState(
@@ -218,8 +214,8 @@ class ScreenRenderTest {
         }
     }
 
-    private fun renderAccountTab(name: String, darkTheme: Boolean) = render(name) {
-        OcaTheme(darkTheme = darkTheme) {
+    private fun renderAccountTab(name: String) = render(name) {
+        OcaTheme {
             HomeFrame(tab = HomeTab.Account, onSelectTab = {}) {
                 AccountScreen(state = AccountUiState(), versionName = "1.0.0", onLogout = {}, onSignInBrowser = {})
             }
@@ -242,155 +238,79 @@ class ScreenRenderTest {
 
     @Test
     @Config(qualifiers = "w384dp-h856dp-xxhdpi")
-    fun `create account light`() = renderCreateAccount("create-account-light", darkTheme = false)
-
-    @Test
-    @Config(qualifiers = "w384dp-h856dp-night-xxhdpi")
-    fun `create account dark`() = renderCreateAccount("create-account-dark", darkTheme = true)
+    fun `create account`() = renderCreateAccount("create-account")
 
     @Test
     @Config(qualifiers = "w384dp-h856dp-xxhdpi")
-    fun `payment notice light`() = renderPaymentNotice("payment-notice-light", darkTheme = false)
-
-    @Test
-    @Config(qualifiers = "w384dp-h856dp-night-xxhdpi")
-    fun `payment notice dark`() = renderPaymentNotice("payment-notice-dark", darkTheme = true)
+    fun `payment notice`() = renderPaymentNotice("payment-notice")
 
     @Test
     @Config(qualifiers = "w384dp-h856dp-xxhdpi")
-    fun `recipients payment notice light`() =
-        renderRecipientsPaymentNotice("recipients-payment-notice-light", darkTheme = false)
-
-    @Test
-    @Config(qualifiers = "w384dp-h856dp-night-xxhdpi")
-    fun `recipients payment notice dark`() =
-        renderRecipientsPaymentNotice("recipients-payment-notice-dark", darkTheme = true)
+    fun `recipients payment notice`() = renderRecipientsPaymentNotice("recipients-payment-notice")
 
     @Test
     @Config(qualifiers = "w384dp-h856dp-xxhdpi")
-    fun `lock screen light`() = renderLock("lock-light", darkTheme = false)
-
-    @Test
-    @Config(qualifiers = "w384dp-h856dp-night-xxhdpi")
-    fun `lock screen dark`() = renderLock("lock-dark", darkTheme = true)
+    fun `lock screen`() = renderLock("lock")
 
     @Test
     @Config(qualifiers = "w384dp-h856dp-xxhdpi")
-    fun `lock screen without screen lock light`() =
-        renderLock("lock-no-screen-lock-light", darkTheme = false, canAuthenticate = false)
-
-    @Test
-    @Config(qualifiers = "w384dp-h856dp-night-xxhdpi")
-    fun `lock screen without screen lock dark`() =
-        renderLock("lock-no-screen-lock-dark", darkTheme = true, canAuthenticate = false)
+    fun `lock screen without screen lock`() = renderLock("lock-no-screen-lock", canAuthenticate = false)
 
     @Test
     @Config(qualifiers = "w384dp-h856dp-xxhdpi")
-    fun `account with app lock on light`() = renderAccountWithAppLock("account-app-lock-on-light", darkTheme = false)
-
-    @Test
-    @Config(qualifiers = "w384dp-h856dp-night-xxhdpi")
-    fun `account with app lock on dark`() = renderAccountWithAppLock("account-app-lock-on-dark", darkTheme = true)
+    fun `account with app lock on`() = renderAccountWithAppLock("account-app-lock-on")
 
     @Test
     @Config(qualifiers = "w384dp-h856dp-xxhdpi")
-    fun `new account payment notice light`() =
-        renderNewAccountPaymentNotice("payment-notice-new-account-light", darkTheme = false)
+    fun `new account payment notice`() = renderNewAccountPaymentNotice("payment-notice-new-account")
 
     @Test
     @Config(qualifiers = "w384dp-h856dp-xxhdpi")
-    fun `qr scanner light`() = renderPairing(
-        "qr-scanner-light",
-        darkTheme = false,
+    fun `qr scanner`() = renderPairing(
+        "qr-scanner",
         state = PairingUiState.Scanning(problem = PairingMessages.NOT_OURS)
     )
 
     @Test
     @Config(qualifiers = "w384dp-h856dp-xxhdpi")
-    fun `qr camera permission light`() = renderPairing(
-        "qr-permission-light",
-        darkTheme = false,
+    fun `qr camera permission`() = renderPairing(
+        "qr-permission",
         state = PairingUiState.Scanning(),
         camera = CameraAccess.NotAsked
     )
 
     @Test
     @Config(qualifiers = "w384dp-h856dp-xxhdpi")
-    fun `qr waiting light`() =
-        renderPairing("qr-waiting-light", darkTheme = false, state = PairingUiState.Waiting("Casual Hippo"))
-
-    @Test
-    @Config(qualifiers = "w384dp-h856dp-night-xxhdpi")
-    fun `new account payment notice dark`() =
-        renderNewAccountPaymentNotice("payment-notice-new-account-dark", darkTheme = true)
-
-    @Test
-    @Config(qualifiers = "w384dp-h856dp-night-xxhdpi")
-    fun `qr scanner dark`() = renderPairing(
-        "qr-scanner-dark",
-        darkTheme = true,
-        state = PairingUiState.Scanning(problem = PairingMessages.NOT_OURS)
-    )
-
-    @Test
-    @Config(qualifiers = "w384dp-h856dp-night-xxhdpi")
-    fun `qr camera permission dark`() = renderPairing(
-        "qr-permission-dark",
-        darkTheme = true,
-        state = PairingUiState.Scanning(),
-        camera = CameraAccess.NotAsked
-    )
-
-    @Test
-    @Config(qualifiers = "w384dp-h856dp-night-xxhdpi")
-    fun `qr waiting dark`() =
-        renderPairing("qr-waiting-dark", darkTheme = true, state = PairingUiState.Waiting("Casual Hippo"))
+    fun `qr waiting`() = renderPairing("qr-waiting", state = PairingUiState.Waiting("Casual Hippo"))
 
     @Test
     @Config(qualifiers = "w384dp-h856dp-xxhdpi")
-    fun `login light`() = renderLogin("login-light", darkTheme = false)
+    fun `login`() = renderLogin("login")
 
     @Test
-    @Config(qualifiers = "w384dp-h856dp-night-xxhdpi")
-    fun `login dark`() = renderLogin("login-dark", darkTheme = true)
-
-    @Test
-    @Config(qualifiers = "w384dp-h480dp-night-xxhdpi")
-    fun `login with the keyboard open dark`() = renderLogin(
-        "login-keyboard-dark",
-        darkTheme = true,
+    @Config(qualifiers = "w384dp-h480dp-xxhdpi")
+    fun `login with the keyboard open`() = renderLogin(
+        "login-keyboard",
         state = LoginUiState(digits = "4711000012345678", error = AuthMessages.WRONG_NUMBER)
     )
 
     @Test
     @Config(qualifiers = "w384dp-h856dp-xxhdpi")
-    fun `new alias light`() = renderNewAlias("new-alias-light", darkTheme = false, cards = 2)
-
-    @Test
-    @Config(qualifiers = "w384dp-h856dp-night-xxhdpi")
-    fun `new alias dark`() = renderNewAlias("new-alias-dark", darkTheme = true, cards = 2)
-
-    @Test
-    @Config(qualifiers = "w384dp-h856dp-night-xxhdpi")
-    fun `new alias with one card dark`() = renderNewAlias("new-alias-one-dark", darkTheme = true, cards = 1)
-
-    @Test
-    @Config(qualifiers = "w384dp-h856dp-night-xxhdpi")
-    fun `new alias with three cards dark`() = renderNewAlias("new-alias-three-dark", darkTheme = true, cards = 3)
+    fun `new alias`() = renderNewAlias("new-alias", cards = 2)
 
     @Test
     @Config(qualifiers = "w384dp-h856dp-xxhdpi")
-    fun `aliases light`() = renderAliases("aliases-light", darkTheme = false)
-
-    @Test
-    @Config(qualifiers = "w384dp-h856dp-night-xxhdpi")
-    fun `aliases dark`() = renderAliases("aliases-dark", darkTheme = true)
+    fun `new alias with one card`() = renderNewAlias("new-alias-one", cards = 1)
 
     @Test
     @Config(qualifiers = "w384dp-h856dp-xxhdpi")
-    fun `account tab light`() = renderAccountTab("account-tab-light", darkTheme = false)
+    fun `new alias with three cards`() = renderNewAlias("new-alias-three", cards = 3)
 
     @Test
-    @Config(qualifiers = "w384dp-h856dp-night-xxhdpi")
-    fun `account tab dark`() = renderAccountTab("account-tab-dark", darkTheme = true)
+    @Config(qualifiers = "w384dp-h856dp-xxhdpi")
+    fun `aliases`() = renderAliases("aliases")
+
+    @Test
+    @Config(qualifiers = "w384dp-h856dp-xxhdpi")
+    fun `account tab`() = renderAccountTab("account-tab")
 }

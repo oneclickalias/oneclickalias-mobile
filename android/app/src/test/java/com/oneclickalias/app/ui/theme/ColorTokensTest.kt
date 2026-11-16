@@ -7,24 +7,6 @@ import org.junit.Test
 /** Hex values are the sRGB conversion of the OKLCH tokens in OCA-frontend/src/index.css. */
 class ColorTokensTest {
     @Test
-    fun `light tokens match the website`() {
-        val t = LightTokens
-        assertEquals(Color(0xFFFFFFFF), t.background)
-        assertEquals(Color(0xFF09090B), t.foreground)
-        assertEquals(Color(0xFFFFFFFF), t.card)
-        assertEquals(Color(0xFF007A55), t.primary)
-        assertEquals(Color(0xFFECFDF5), t.primaryForeground)
-        assertEquals(Color(0xFFF4F4F5), t.secondary)
-        assertEquals(Color(0xFF18181B), t.secondaryForeground)
-        assertEquals(Color(0xFFF4F4F5), t.muted)
-        assertEquals(Color(0xFF71717B), t.mutedForeground)
-        assertEquals(Color(0xFFE7000B), t.destructive)
-        assertEquals(Color(0xFFE4E4E7), t.border)
-        assertEquals(Color(0xFFE4E4E7), t.input)
-        assertEquals(Color(0xFF9F9FA9), t.ring)
-    }
-
-    @Test
     fun `dark tokens match the website`() {
         val t = DarkTokens
         assertEquals(Color(0xFF09090B), t.background)
@@ -44,25 +26,24 @@ class ColorTokensTest {
 
     @Test
     fun `color scheme maps tokens onto material roles`() {
-        for (t in listOf(LightTokens, DarkTokens)) {
-            val s = t.toColorScheme()
-            assertEquals(t.background, s.background)
-            assertEquals(t.foreground, s.onBackground)
-            assertEquals(t.background, s.surface)
-            assertEquals(t.foreground, s.onSurface)
-            assertEquals(t.card, s.surfaceContainer)
-            assertEquals(t.card, s.surfaceContainerHigh)
-            assertEquals(t.primary, s.primary)
-            assertEquals(t.primaryForeground, s.onPrimary)
-            assertEquals(t.secondary, s.secondary)
-            assertEquals(t.secondaryForeground, s.onSecondary)
-            assertEquals(t.muted, s.surfaceVariant)
-            assertEquals(t.mutedForeground, s.onSurfaceVariant)
-            assertEquals(t.destructive, s.error)
-            assertEquals(t.border, s.outline)
-            assertEquals(t.border, s.outlineVariant)
-            // No tonal elevation tint: surfaces stay flat.
-            assertEquals(t.background, s.surfaceTint)
-        }
+        val t = DarkTokens
+        val s = t.toColorScheme()
+        assertEquals(t.background, s.background)
+        assertEquals(t.foreground, s.onBackground)
+        assertEquals(t.background, s.surface)
+        assertEquals(t.foreground, s.onSurface)
+        assertEquals(t.card, s.surfaceContainer)
+        assertEquals(t.card, s.surfaceContainerHigh)
+        assertEquals(t.primary, s.primary)
+        assertEquals(t.primaryForeground, s.onPrimary)
+        assertEquals(t.secondary, s.secondary)
+        assertEquals(t.secondaryForeground, s.onSecondary)
+        assertEquals(t.muted, s.surfaceVariant)
+        assertEquals(t.mutedForeground, s.onSurfaceVariant)
+        assertEquals(t.destructive, s.error)
+        assertEquals(t.border, s.outline)
+        assertEquals(t.border, s.outlineVariant)
+        // No tonal elevation tint: surfaces stay flat.
+        assertEquals(t.background, s.surfaceTint)
     }
 }

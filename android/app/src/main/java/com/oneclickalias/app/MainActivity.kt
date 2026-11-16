@@ -18,8 +18,12 @@ import com.oneclickalias.app.ui.theme.OcaTheme
  */
 class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Screens paint their own flat background behind both system bars.
-        enableEdgeToEdge(navigationBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT))
+        // Screens paint their own flat background behind both system bars. The app
+        // is always dark, so the bar icons stay light whatever the system setting.
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT)
+        )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             // No translucent scrim behind three-button navigation.
             window.isNavigationBarContrastEnforced = false
