@@ -3,5 +3,5 @@
     <!-- Black, so the white cursor stands alone -->
     <color name="ic_launcher_background">#000000</color>
     <!-- Token "background", shown before Compose draws the first frame -->
-    <color name="window_background">#FFFFFF</color>
+    <color name="window_background">#09090B</color>
 </resources>

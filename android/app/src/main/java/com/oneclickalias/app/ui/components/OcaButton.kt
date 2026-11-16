@@ -45,7 +45,7 @@ fun OcaButton(
         OcaButtonVariant.Primary -> c.primary to c.primaryForeground
         OcaButtonVariant.Secondary -> c.secondary to c.secondaryForeground
         OcaButtonVariant.Outline -> Color.Transparent to c.foreground
-        OcaButtonVariant.Destructive -> c.destructive.copy(alpha = if (c.isDark) 0.2f else 0.1f) to c.destructive
+        OcaButtonVariant.Destructive -> c.destructive.copy(alpha = 0.2f) to c.destructive
         OcaButtonVariant.Ghost -> Color.Transparent to c.foreground
     }
     Button(
