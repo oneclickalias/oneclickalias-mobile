@@ -2,6 +2,8 @@ package com.oneclickalias.app.navigation
 
 import android.os.SystemClock
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -157,7 +159,15 @@ fun OcaNavHost(
     NavHost(
         navController = navController,
         startDestination = if (startSignedIn) SignedInGraph else SignedOutGraph,
-        modifier = modifier
+        modifier = modifier,
+        // Screens switch at once, like the tabs: no fade (the default) and no shrinking on the
+        // back gesture; while the finger is down the screen stays put.
+        enterTransition = { EnterTransition.None },
+        exitTransition = { ExitTransition.None },
+        popEnterTransition = { EnterTransition.None },
+        popExitTransition = { ExitTransition.None },
+        predictivePopEnterTransition = { _ -> EnterTransition.None },
+        predictivePopExitTransition = { _ -> ExitTransition.None }
     ) {
         navigation<SignedOutGraph>(startDestination = SignInRoute) {
             composable<SignInRoute> {

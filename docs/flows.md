@@ -21,7 +21,9 @@ the Auth origin, `/api/*` to the AMS origin (both
   state (Android: no `SavedStateHandle`/Bundle; iOS: no state restoration).
 - Screen capture is blocked while a number is visible (Android
   `FLAG_SECURE`; iOS: hide the number when the app resigns active and in the
-  app-switcher snapshot, detect screen recording).
+  app-switcher snapshot, detect screen recording). On sign-up the protection
+  starts while the number is still being created: the flag takes a frame to
+  apply, so setting it when the number arrives lets one frame through.
 
 ## Create account
 

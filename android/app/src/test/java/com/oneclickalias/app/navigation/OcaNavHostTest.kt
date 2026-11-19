@@ -5,11 +5,13 @@ import android.app.Application
 import android.content.ClipboardManager
 import android.content.Context
 import android.view.WindowManager
+import androidx.activity.BackEventCompat
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
@@ -23,6 +25,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.lifecycle.Lifecycle
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import androidx.test.core.app.ApplicationProvider
@@ -403,6 +406,58 @@ class OcaNavHostTest {
             hasContentDescription("Device brave otter, this device", substring = true),
             5_000
         )
+    }
+
+    @Test
+    fun `screens switch at once, without a fade`() {
+        store.stored = storedSession()
+        backend.devices += Device(DEVICE, "brave otter", "2026-11-05T10:00:00Z", current = true)
+        launch()
+        waitForAliases()
+        openTab("Account")
+        compose.waitForIdle()
+
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithText("Devices").performClick()
+        compose.mainClock.advanceTimeBy(100)
+        // Only the new screen: the account tab is gone, not fading out beneath it.
+        compose.onNodeWithText("Recipients").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Back").assertExists()
+
+        compose.onNodeWithContentDescription("Back").performClick()
+        compose.mainClock.advanceTimeBy(100)
+        compose.onNodeWithContentDescription("Back").assertDoesNotExist()
+        compose.onNodeWithText("Recipients").assertExists()
+        compose.mainClock.autoAdvance = true
+    }
+
+    @Test
+    fun `the back gesture does not move the screen, letting go switches at once`() {
+        store.stored = storedSession()
+        backend.devices += Device(DEVICE, "brave otter", "2026-11-05T10:00:00Z", current = true)
+        launch()
+        waitForAliases()
+        openTab("Account")
+        compose.onNodeWithText("Devices").performClick()
+        // The back arrow: only the devices screen has one.
+        compose.waitUntilAtLeastOneExists(hasContentDescription("Back"), 5_000)
+        compose.waitForIdle()
+        val before = compose.onNodeWithContentDescription("Back").getBoundsInRoot()
+
+        compose.runOnUiThread {
+            val dispatcher = compose.activity.onBackPressedDispatcher
+            dispatcher.dispatchOnBackStarted(BackEventCompat(0f, 500f, 0f, BackEventCompat.EDGE_LEFT))
+            dispatcher.dispatchOnBackProgressed(BackEventCompat(400f, 500f, 0.5f, BackEventCompat.EDGE_LEFT))
+        }
+        compose.waitForIdle()
+        val during = compose.onNodeWithContentDescription("Back").getBoundsInRoot()
+
+        // No animation: the screen neither shrinks nor moves while the finger is down.
+        assertEquals(before, during)
+
+        compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
+        compose.waitUntilDoesNotExist(hasContentDescription("Back"), 5_000)
+        assertTrue(nav.currentDestination?.hasRoute<AliasesRoute>() == true)
     }
 
     @Test
