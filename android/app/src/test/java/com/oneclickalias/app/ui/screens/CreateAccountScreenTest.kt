@@ -58,7 +58,6 @@ class CreateAccountScreenTest {
         show()
 
         compose.onNodeWithContentDescription("Creating your account").assertIsDisplayed()
-        assertFalse(isSecure())
     }
 
     @Test
@@ -72,15 +71,21 @@ class CreateAccountScreenTest {
     }
 
     @Test
-    fun `window is secure only while the number is shown`() {
+    fun `window is secure while the number is created and shown`() {
+        // Already while creating: the flag takes a frame to apply, the number must
+        // never be drawn into a recording before it does.
         show()
-        assertFalse(isSecure())
+        assertTrue(isSecure())
 
         state = CreateAccountUiState.Ready("4711000012345678")
         compose.waitForIdle()
         assertTrue(isSecure())
 
         state = CreateAccountUiState.Interrupted
+        compose.waitForIdle()
+        assertFalse(isSecure())
+
+        state = CreateAccountUiState.CreateFailed("Could not create an account.")
         compose.waitForIdle()
         assertFalse(isSecure())
     }
