@@ -1,12 +1,12 @@
 package com.oneclickalias.app.ui.aliases
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -15,30 +15,28 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.oneclickalias.app.R
-import com.oneclickalias.app.data.aliases.RecipientDecision
 import com.oneclickalias.app.ui.components.OcaButton
 import com.oneclickalias.app.ui.components.OcaButtonVariant
 import com.oneclickalias.app.ui.components.OcaCard
 import com.oneclickalias.app.ui.components.OcaCardSize
-import com.oneclickalias.app.ui.components.OcaErrorText
+import com.oneclickalias.app.ui.components.OcaInlineMessage
+import com.oneclickalias.app.ui.components.OcaMessageTone
 import com.oneclickalias.app.ui.components.OcaNotice
+import com.oneclickalias.app.ui.theme.GeistMono
 import com.oneclickalias.app.ui.theme.OcaSpacing
 import com.oneclickalias.app.ui.theme.OcaTheme
-import kotlinx.coroutines.delay
-
-/** How long "Copied"/"Deleted" stay; errors stay until the next action. */
-private const val CONFIRMATION_MILLIS = 3_000L
 
 /**
  * The pinned area under the list: the payment notice (unless [showPayment] is
@@ -67,49 +65,89 @@ internal fun AliasesBottomBar(state: AliasesUiState, callbacks: AliasesCallbacks
     }
 }
 
+/** "Copied"/"Deleted" close themselves; an error stays until the next action. */
 @Composable
 private fun MessageLine(message: AliasesMessage, onDismiss: () -> Unit) {
     when (message) {
-        is AliasesMessage.Error -> OcaErrorText(text = message.text)
-        is AliasesMessage.Copied -> QuietLine("Copied to clipboard")
-        is AliasesMessage.Deleted -> QuietLine("Alias deleted")
-    }
-    if (message !is AliasesMessage.Error) {
-        LaunchedEffect(message) {
-            delay(CONFIRMATION_MILLIS)
-            onDismiss()
-        }
+        is AliasesMessage.Error -> OcaInlineMessage(text = message.text, tone = OcaMessageTone.Error)
+
+        is AliasesMessage.Copied ->
+            OcaInlineMessage(text = "Copied to clipboard", tone = OcaMessageTone.Success, onTimeout = onDismiss)
+
+        is AliasesMessage.Deleted ->
+            OcaInlineMessage(text = "Alias deleted", tone = OcaMessageTone.Success, onTimeout = onDismiss)
     }
 }
 
-@Composable
-private fun QuietLine(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodyMedium,
-        color = OcaTheme.colors.mutedForeground,
-        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
-    )
-}
-
-/** Instead of the cards while no recipient is confirmed; leads to the recipient screen. */
+/**
+ * Instead of the cards while no recipient is confirmed: the two steps to the
+ * first alias, the done ones ticked, and the way to the recipient screen.
+ */
 @Composable
 internal fun NoRecipientNotice(awaitingConfirmation: Boolean, onOpenRecipients: (addNew: Boolean) -> Unit) {
-    if (awaitingConfirmation) {
-        OcaNotice(
-            title = "Confirm a recipient address first",
-            body = "Aliases forward to one of your email addresses. Open the confirmation link we emailed you, " +
-                "then come back here.",
-            action = "Open recipients",
-            onAction = { onOpenRecipients(false) }
+    OcaCard(size = OcaCardSize.Small, modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
+            verticalArrangement = Arrangement.spacedBy(OcaSpacing.xxs)
+        ) {
+            Text(
+                text = if (awaitingConfirmation) "Confirm your inbox" else "Add an inbox to get started",
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Medium),
+                modifier = Modifier.semantics { heading() }
+            )
+            Text(
+                text = "Aliases forward mail to an inbox you confirm.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = OcaTheme.colors.mutedForeground
+            )
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(OcaSpacing.sm)) {
+            SetupStep(number = 1, text = "Add the inbox your aliases forward to", done = awaitingConfirmation)
+            SetupStep(number = 2, text = "Open the confirmation link we email you", done = false)
+        }
+        OcaButton(
+            text = if (awaitingConfirmation) "Open recipients" else "Add recipient",
+            onClick = { onOpenRecipients(!awaitingConfirmation) },
+            variant = OcaButtonVariant.Outline,
+            modifier = Modifier.fillMaxWidth()
         )
-    } else {
-        OcaNotice(
-            title = "Confirm a recipient address first",
-            body = "Aliases forward to one of your email addresses. Add one and open the confirmation link " +
-                "we email you.",
-            action = "Add recipient",
-            onAction = { onOpenRecipients(true) }
+    }
+}
+
+/** A numbered step; a done one shows a check instead of its number. */
+@Composable
+private fun SetupStep(number: Int, text: String, done: Boolean) {
+    val c = OcaTheme.colors
+    Row(
+        modifier = Modifier.clearAndSetSemantics {
+            contentDescription = "Step $number, $text${if (done) ", done" else ""}"
+        },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(OcaSpacing.sm)
+    ) {
+        Box(
+            modifier = Modifier.size(24.dp).border(1.dp, if (done) c.primary else c.border),
+            contentAlignment = Alignment.Center
+        ) {
+            if (done) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_check),
+                    contentDescription = null,
+                    tint = c.primary,
+                    modifier = Modifier.size(16.dp)
+                )
+            } else {
+                Text(
+                    text = number.toString(),
+                    style = MaterialTheme.typography.labelMedium.copy(fontFamily = GeistMono),
+                    color = c.mutedForeground
+                )
+            }
+        }
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (done) c.mutedForeground else c.foreground
         )
     }
 }

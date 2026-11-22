@@ -100,75 +100,89 @@ fun LoginScreen(
                 .padding(horizontal = OcaSpacing.gutter, vertical = if (compact) OcaSpacing.md else OcaSpacing.xl),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Column(
-                modifier = Modifier.padding(top = if (compact) OcaSpacing.xxs else OcaSpacing.xl),
-                verticalArrangement = Arrangement.spacedBy(OcaSpacing.md)
-            ) {
-                Wordmark(modifier = Modifier.semantics { heading() })
-                if (!compact) {
-                    Text(
-                        text = "Email aliases in one click. No username, no password.",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+            // Logo and form together at the top, "Create account" at the bottom: no empty band
+            // between the name and the field on a tall phone.
+            Column {
+                Column(
+                    modifier = Modifier.padding(top = if (compact) OcaSpacing.xxs else OcaSpacing.xl),
+                    verticalArrangement = Arrangement.spacedBy(OcaSpacing.md)
+                ) {
+                    Wordmark(modifier = Modifier.semantics { heading() })
+                    if (!compact) {
+                        Text(
+                            text = "Email aliases in one click. No username, no password.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
-            }
-            Column(
-                modifier = Modifier.padding(vertical = if (compact) OcaSpacing.md else OcaSpacing.xxl),
-                verticalArrangement = Arrangement.spacedBy(OcaSpacing.md)
-            ) {
-                if (notice != null) SignedOutNotice(notice)
-                AccountNumberField(
-                    digits = state.digits,
-                    onInput = onInput,
-                    revealed = state.revealed,
-                    onToggleReveal = onToggleReveal,
-                    enabled = !busy,
-                    onDone = { if (state.canSubmit) onSubmit() },
-                    hint = null
-                )
-                if (state.needsConfirmation) {
-                    OcaCheckboxRow(
-                        checked = state.confirmed,
-                        onCheckedChange = onConfirmedChange,
-                        text = "I saved my account number",
-                        enabled = !state.submitting
-                    )
-                }
-                // Next to the button, so both stay in view above the keyboard.
-                state.error?.let { OcaErrorText(it) }
-                OcaButton(
-                    text = when {
-                        busy -> "Logging in…"
-                        state.needsConfirmation -> "Confirm and log in"
-                        else -> "Log in"
-                    },
-                    onClick = onSubmit,
-                    enabled = state.canSubmit,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                if (state.deviceLimitReached) {
-                    // Website wording (OCA-frontend/src/login-card.tsx).
-                    OcaNotice(
-                        title = "Device limit reached",
-                        body = "Every device slot for this account is in use. You can sign out all devices — " +
-                            "including any you can't physically reach — and then log in again on this one.",
-                        action = if (state.submitting) "Signing out all devices…" else "Sign out all devices & log in",
-                        onAction = onRevokeAllAndLogIn,
-                        actionVariant = OcaButtonVariant.Destructive,
-                        actionEnabled = state.canSubmit
-                    )
-                }
-                if (onScanCode != null) {
-                    // QR login: signed in on the website, no number to type.
-                    OrLine()
-                    OcaButton(
-                        text = "Scan code from dashboard",
-                        onClick = onScanCode,
+                Column(
+                    modifier = Modifier.padding(vertical = if (compact) OcaSpacing.md else OcaSpacing.xxl),
+                    verticalArrangement = Arrangement.spacedBy(OcaSpacing.md)
+                ) {
+                    if (notice != null) SignedOutNotice(notice)
+                    AccountNumberField(
+                        digits = state.digits,
+                        onInput = onInput,
+                        revealed = state.revealed,
+                        onToggleReveal = onToggleReveal,
                         enabled = !busy,
-                        variant = OcaButtonVariant.Outline,
+                        onDone = { if (state.canSubmit) onSubmit() },
+                        hint = null
+                    )
+                    if (state.needsConfirmation) {
+                        Text(
+                            text = AuthMessages.CONFIRM_TO_CONTINUE,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = OcaTheme.colors.mutedForeground,
+                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                        )
+                        OcaCheckboxRow(
+                            checked = state.confirmed,
+                            onCheckedChange = onConfirmedChange,
+                            text = "I saved my account number",
+                            enabled = !state.submitting
+                        )
+                    }
+                    // Next to the button, so both stay in view above the keyboard.
+                    state.error?.let { OcaErrorText(it) }
+                    OcaButton(
+                        text = when {
+                            busy -> "Logging in…"
+                            state.needsConfirmation -> "Confirm and log in"
+                            else -> "Log in"
+                        },
+                        onClick = onSubmit,
+                        enabled = state.canSubmit,
                         modifier = Modifier.fillMaxWidth()
                     )
+                    if (state.deviceLimitReached) {
+                        // Website wording (OCA-frontend/src/login-card.tsx).
+                        OcaNotice(
+                            title = "Device limit reached",
+                            body = "Every device slot for this account is in use. You can sign out all devices — " +
+                                "including any you can't physically reach — and then log in again on this one.",
+                            action = if (state.submitting) {
+                                "Signing out all devices…"
+                            } else {
+                                "Sign out all devices & log in"
+                            },
+                            onAction = onRevokeAllAndLogIn,
+                            actionVariant = OcaButtonVariant.Destructive,
+                            actionEnabled = state.canSubmit
+                        )
+                    }
+                    if (onScanCode != null) {
+                        // QR login: signed in on the website, no number to type.
+                        OrLine()
+                        OcaButton(
+                            text = "Scan code from dashboard",
+                            onClick = onScanCode,
+                            enabled = !busy,
+                            variant = OcaButtonVariant.Outline,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(OcaSpacing.sm)) {

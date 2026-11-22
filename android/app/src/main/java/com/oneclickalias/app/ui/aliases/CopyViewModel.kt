@@ -54,6 +54,7 @@ sealed interface CopyMessage {
  * numbers, only alias and recipient addresses.
  *
  * @property noRecipient no confirmed recipient: true = one waits for its confirmation, false = none added.
+ * @property pendingRecipients recipients still waiting for their confirmation, shown next to the cards.
  */
 data class CopyUiState(
     val cards: List<CopyCard> = emptyList(),
@@ -63,6 +64,7 @@ data class CopyUiState(
     val refreshing: Boolean = false,
     val paymentRequired: Boolean = false,
     val noRecipient: Boolean? = null,
+    val pendingRecipients: Int = 0,
     val message: CopyMessage? = null
 )
 
@@ -152,7 +154,8 @@ class CopyViewModel(
                     AliasMessages.error(ready, AliasAction.Load)
                 },
                 paymentRequired = unpaid,
-                noRecipient = if (confirmed.isEmpty()) recipients.value.recipients.isNotEmpty() else null
+                noRecipient = if (confirmed.isEmpty()) recipients.value.recipients.isNotEmpty() else null,
+                pendingRecipients = recipients.value.recipients.count { !it.verified }
             )
         }
     }

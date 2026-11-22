@@ -397,10 +397,10 @@ class OcaNavHostTest {
         waitForAliases()
 
         openTab("Account")
-        compose.onNodeWithText("Recipients").performClick()
+        compose.onNodeWithText("Recipients").performScrollTo().performClick()
         compose.waitUntilAtLeastOneExists(hasContentDescription("Recipient home@example.com", substring = true), 5_000)
         compose.onNodeWithContentDescription("Back").performClick()
-        compose.onNodeWithText("Devices").performClick()
+        compose.onNodeWithText("Devices").performScrollTo().performClick()
 
         compose.waitUntilAtLeastOneExists(
             hasContentDescription("Device brave otter, this device", substring = true),
@@ -415,6 +415,8 @@ class OcaNavHostTest {
         launch()
         waitForAliases()
         openTab("Account")
+        // Scrolled into view while the clock still runs; with the clock stopped a scroll never settles.
+        compose.onNodeWithText("Devices").performScrollTo()
         compose.waitForIdle()
 
         compose.mainClock.autoAdvance = false
@@ -438,7 +440,7 @@ class OcaNavHostTest {
         launch()
         waitForAliases()
         openTab("Account")
-        compose.onNodeWithText("Devices").performClick()
+        compose.onNodeWithText("Devices").performScrollTo().performClick()
         // The back arrow: only the devices screen has one.
         compose.waitUntilAtLeastOneExists(hasContentDescription("Back"), 5_000)
         compose.waitForIdle()
@@ -468,7 +470,7 @@ class OcaNavHostTest {
         launch()
         waitForAliases()
         openTab("Account")
-        compose.onNodeWithText("Devices").performClick()
+        compose.onNodeWithText("Devices").performScrollTo().performClick()
         waitForText("Lost access to a device?")
 
         compose.onNodeWithText("Sign out all devices", ignoreCase = true).performScrollTo().performClick()
@@ -552,7 +554,7 @@ class OcaNavHostTest {
         waitForAliases()
         openTab("Account")
 
-        compose.onNodeWithText("Devices").performClick()
+        compose.onNodeWithText("Devices").performScrollTo().performClick()
         waitForText("Lost access to a device?")
         compose.onNodeWithContentDescription("Back").performClick()
 
@@ -627,7 +629,7 @@ class OcaNavHostTest {
         store.stored = storedSession()
         launch()
         waitForAliases()
-        waitForText("Confirm a recipient address first")
+        waitForText("Add an inbox to get started")
 
         compose.onNodeWithText("Add recipient", ignoreCase = true).performClick()
         waitForText("Enter the inbox", substring = true)

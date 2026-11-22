@@ -73,7 +73,7 @@ class LoginViewModel(private val sessionManager: SessionManager) : ViewModel() {
                             submitting = false,
                             needsConfirmation = true,
                             confirmed = false,
-                            error = AuthMessages.CONFIRM_TO_CONTINUE
+                            error = null
                         )
 
                     result is ApiResult.HttpError && result.authErrorCode() == ErrorCode.DEVICE_LIMIT_REACHED ->

@@ -219,6 +219,17 @@ class CopyViewModelTest {
     }
 
     @Test
+    fun `recipients waiting for confirmation are counted next to the cards`() = runTest {
+        ams.addRecipient("r-home", "home@example.com")
+        ams.addRecipient("r-new", "new@example.com", verified = false)
+
+        val vm = loaded()
+
+        assertEquals(1, vm.state.value.cards.size)
+        assertEquals(1, vm.state.value.pendingRecipients)
+    }
+
+    @Test
     fun `a failed ready alias shows the error on its card`() = runTest {
         ams.addRecipient("r-home", "home@example.com")
         ams.ensureReadyResponse = { FakeAmsBackend.error(429, "rate_limited") }

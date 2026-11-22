@@ -115,7 +115,8 @@ class LoginViewModelTest {
         vm.enter()
         vm.submit()
         eventually { vm.state.value.needsConfirmation }
-        assertEquals(AuthMessages.CONFIRM_TO_CONTINUE, vm.state.value.error)
+        // An explanation on the screen, not an error: the user could not have known about the step.
+        assertNull(vm.state.value.error)
         assertFalse(vm.state.value.canSubmit)
 
         backend.loginResponse = FakeAuthBackend().loginResponse
