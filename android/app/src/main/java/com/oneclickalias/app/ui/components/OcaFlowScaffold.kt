@@ -23,6 +23,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import com.oneclickalias.app.ui.theme.OcaSpacing
 import com.oneclickalias.app.ui.theme.OcaTheme
 import java.util.Locale
@@ -31,13 +32,15 @@ import java.util.Locale
  * Page frame of the sign-up/login screens: [topBar], scrollable [content] and
  * a [bottom] area (main buttons) pinned under it. The frame pads with
  * `safeDrawing`, which includes the keyboard, so the bottom buttons sit right
- * above the keyboard instead of behind it.
+ * above the keyboard instead of behind it. [horizontalPadding] is the side
+ * gutter of content and bottom area.
  */
 @Composable
 fun OcaFlowScaffold(
     topBar: @Composable () -> Unit,
     bottom: @Composable ColumnScope.() -> Unit,
     modifier: Modifier = Modifier,
+    horizontalPadding: Dp = OcaSpacing.gutter,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Column(
@@ -54,12 +57,12 @@ fun OcaFlowScaffold(
                     .weight(1f)
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = OcaSpacing.gutter, vertical = OcaSpacing.md),
+                    .padding(horizontal = horizontalPadding, vertical = OcaSpacing.md),
                 verticalArrangement = Arrangement.spacedBy(OcaSpacing.xl),
                 content = content
             )
             Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = OcaSpacing.gutter, vertical = OcaSpacing.lg),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = horizontalPadding, vertical = OcaSpacing.lg),
                 verticalArrangement = Arrangement.spacedBy(OcaSpacing.sm),
                 content = bottom
             )
