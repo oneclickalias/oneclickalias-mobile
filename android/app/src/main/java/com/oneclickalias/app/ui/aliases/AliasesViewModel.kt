@@ -58,6 +58,8 @@ data class AliasActions(
  *
  * @property paymentRequired the account status says unpaid, or a write was refused with
  *   `payment_required`; decided again by the account status of the next load.
+ * @property expandedGroups keys ([com.oneclickalias.app.data.aliases.AliasGroup.key]) of the
+ *   recipient groups shown open; all start closed. Kept across reloads, not stored.
  */
 data class AliasesUiState(
     val aliases: List<Alias> = emptyList(),
@@ -67,7 +69,8 @@ data class AliasesUiState(
     val refreshing: Boolean = false,
     val message: AliasesMessage? = null,
     val paymentRequired: Boolean = false,
-    val actions: AliasActions? = null
+    val actions: AliasActions? = null,
+    val expandedGroups: Set<String> = emptySet()
 )
 
 /**
@@ -136,6 +139,13 @@ class AliasesViewModel(
     fun copy(alias: Alias) {
         val systemConfirms = clipboard.copy(alias.alias)
         mutableState.update { it.copy(message = if (systemConfirms) null else AliasesMessage.Copied(alias.alias)) }
+    }
+
+    /** Opens or closes the recipient group with [key]. */
+    fun toggleGroup(key: String) {
+        mutableState.update { s ->
+            s.copy(expandedGroups = if (key in s.expandedGroups) s.expandedGroups - key else s.expandedGroups + key)
+        }
     }
 
     fun openActions(aliasId: String) {
@@ -255,5 +265,6 @@ fun AliasesViewModel.callbacks(): AliasesCallbacks = AliasesCallbacks(
     onCancelDelete = ::cancelDelete,
     onConfirmDelete = ::confirmDelete,
     onOpenBilling = ::openBilling,
-    onDismissMessage = ::dismissMessage
+    onDismissMessage = ::dismissMessage,
+    onToggleGroup = ::toggleGroup
 )

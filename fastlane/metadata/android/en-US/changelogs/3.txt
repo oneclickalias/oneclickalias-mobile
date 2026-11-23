@@ -1,0 +1,7 @@
+- Placeholders in the shape of the content while it loads
+- Aliases grouped by recipient, opened with a tap; a badge marks aliases with trackers allowed
+- Empty states, and a two-step checklist before your first confirmed inbox
+- Account tab with a status card and clear sections
+- Clearer messages, badges and confirmation sheets
+- Screens switch at once, without animation
+- The window is protected while your account number is created

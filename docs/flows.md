@@ -21,7 +21,9 @@ the Auth origin, `/api/*` to the AMS origin (both
   state (Android: no `SavedStateHandle`/Bundle; iOS: no state restoration).
 - Screen capture is blocked while a number is visible (Android
   `FLAG_SECURE`; iOS: hide the number when the app resigns active and in the
-  app-switcher snapshot, detect screen recording).
+  app-switcher snapshot, detect screen recording). On sign-up the protection
+  starts while the number is still being created: the flag takes a frame to
+  apply, so setting it when the number arrives lets one frame through.
 
 ## Create account
 
@@ -65,7 +67,9 @@ in view.
 The server picks a random device name; send no device details.
 
 - `403 registration_not_confirmed`: show the same "I saved my account
-  number" checkbox; the button becomes "Confirm and log in" and runs
+  number" checkbox under a quiet explanation (not an error): "This account
+  was just created. Confirm that you saved its number to finish signing
+  up."; the button becomes "Confirm and log in" and runs
   confirm-registration, then login.
 - Store `accessToken`, `refreshToken`, `deviceId` and the absolute access
   expiry (`now + expiresIn`) encrypted (Android Keystore AES-256-GCM; iOS
@@ -217,7 +221,7 @@ the body with them). Never show `message`. Decide by `error`, then by status:
 |---|---|
 | `unauthorized` (login) | This account number does not exist. |
 | `invalid_request` | Invalid account number — check that it has exactly 16 digits. |
-| `registration_not_confirmed` | Please confirm that you've saved your account number. (plus checkbox) |
+| `registration_not_confirmed` | This account was just created. Confirm that you saved its number to finish signing up. (an explanation, not an error; plus checkbox) |
 | `device_limit_reached` (409) | the device-limit card (above); the text "Device limit reached — sign out another device first, or sign out all devices." only if it comes back after revoking |
 | `account_blocked` | Your account is suspended — changes are not possible. You can still contact support. |
 | `rate_limited` / 429 | Too many requests — please wait a moment and try again. |
@@ -267,8 +271,14 @@ only and is **not active** (receives no mail, not in any list) until it is
   vertical middle of the space between heading and tab bar. When there are
   more than fit, they start right under the heading and the page scrolls.
   All cards look alike.
+- First load: placeholder cards in the cards' shape (static blocks, no
+  shimmer; screen readers: "Loading your aliases").
 - "Copied to clipboard", "removed" and a failed reload (with **Retry**) show
-  in a line pinned above the tab bar.
+  in a line pinned above the tab bar, with an icon: a check for done, an
+  info sign for "removed", an error sign for errors. Done and info lines
+  close after 3 s; errors stay.
+- Recipients still waiting for their link are counted under the cards ("1
+  inbox is waiting for confirmation"); a tap opens the recipient screen.
 - **Copy**, without waiting for the network:
   1. remember the alias id as a **pending claim** (persisted; Android:
      `appPreferences` DataStore; iOS: `UserDefaults`; not secret; deleted when
@@ -281,15 +291,19 @@ only and is **not active** (receives no mail, not in any list) until it is
        copy the new one." and a new ready alias.
      - anything else (offline, `5xx`, `429`, `403`) → keep it; the card keeps
        the copied alias with "Copied. Go online to activate this alias — until
-       then it doesn't receive mail. Tap to copy it again." (a tap copies the
+       then it doesn't receive mail. Tap to copy it again." (in the normal
+       text colour with an info sign: a state, not an error; a tap copies the
        same address, no second claim). Delivery is retried in the background as soon as the
        phone is online (Android: WorkManager, network constraint, exponential
        backoff), at every load and at the start of a logout (at most 10 s).
 - A pending claim found at load time shows its card in the "copied" state.
 - Unpaid (`paid: false` or `403 payment_required`) → payment notice instead
-  of cards. No confirmed recipient → "Confirm a recipient address first" with
-  **Add recipient**, or **Open recipients** when one waits for its link. Both
-  sit in the middle of the screen, like the cards.
+  of cards. No confirmed recipient → "Add an inbox to get started" with two
+  numbered steps ("Add the inbox your aliases forward to", "Open the
+  confirmation link we email you") and **Add recipient**; when one waits for
+  its link, the title is "Confirm your inbox", the first step shows a check
+  and the button is **Open recipients**. Both sit in the middle of the
+  screen, like the cards.
 - A card that could not get a ready alias shows the alias error text (table
   below) and "Tap to try again."; a tap reloads (tap action "retry").
 
@@ -301,19 +315,27 @@ only and is **not active** (receives no mail, not in any list) until it is
   first). Ties and unreadable timestamps keep the reversed server order.
   Parse timestamps as offset date-times (they may carry `Z` or `+hh:mm` and
   fractions).
-- First load: a quiet "Loading your aliases…" line. If it fails: the error
+- First load: placeholder group heads (static blocks; screen readers:
+  "Loading your aliases"). If it fails: the error
   text (table below) and **Retry**. A failed reload keeps the list visible and
   shows the error with Retry above it.
 - **Grouped by recipient:** aliases with the same destination address
-  (compared case-insensitively) form a group: a quiet label on the page
-  background (the recipient's letter square as on "New alias", the address,
-  the number of aliases at the end), then one card with the group's rows. The
-  label stays at the top while its card scrolls. Inside a group the order above holds, and the groups follow their
-  newest alias (the recipient used last comes first). Screen readers: header
-  "Forwards to <destination>, <n> aliases" (a heading).
+  (compared case-insensitively) form a group card. Its head shows the
+  recipient's letter square as on "New alias", the address, the number of
+  aliases in a small badge and a chevron. Groups start **closed**: a tap on
+  the head opens or closes it (instantly, no animation); open groups stay
+  open across reloads and tab switches, not across app starts. A lone group
+  is always open and its head is no button. An open group's head stays at
+  the top while its rows scroll. Inside a group the order above holds, and
+  the groups follow their newest alias (the recipient used last comes
+  first). Screen readers: head "Forwards to <destination>, <n> aliases" (a
+  heading), state "Expanded"/"Collapsed", tap action "expand"/"collapse".
 - Under the tab's heading: "Tap an alias to copy it." once there are
-  aliases; with none, "No aliases yet. Copy your first one under New alias."
-  in the same place, right under the heading.
+  aliases. With none: in the middle of the screen a list icon, "No aliases
+  yet", "Aliases you copy under New alias show up here, grouped by the inbox
+  they forward to." and **Go to New alias** (switches the tab). An unpaid
+  new account sees the payment notice there instead, and "No aliases yet.
+  Copy your first one under New alias." right under the heading.
 - Unpaid: the payment notice is pinned above the tab bar while there are
   aliases; with none (a new account) it sits in the middle of the screen, as
   on "New alias".
@@ -321,9 +343,12 @@ only and is **not active** (receives no mail, not in any list) until it is
   longest diceware aliases (`word-word-NNNN@domain`, words of up to 9 letters)
   fit in one line inside a group card on a 384dp phone; a longer one wraps
   right before the `@` (break opportunity there, none inside the domain), at
-  most two lines, then an ellipsis. 1dp dividers between the rows of a card,
-  starting where the text starts. Screen readers:
-  "Alias <address>, forwards to <destination>", tap action "copy",
+  most two lines, then an ellipsis. An alias with tracker blocking off shows a
+  small "Trackers allowed" badge under the address (nothing when blocking is
+  on, the default). 1dp dividers between the rows of a card, starting where
+  the text starts. Screen readers:
+  "Alias <address>, forwards to <destination>" (plus ", trackers allowed"),
+  tap action "copy",
   long-press action "show actions"; a separate "⋯" button "Actions for
   <address>". A tap copies the address (plain text).
 - There is no "New alias" button: new aliases come from the "New alias" tab.
@@ -331,16 +356,18 @@ only and is **not active** (receives no mail, not in any list) until it is
 ### Actions per alias
 
 Tap on a row copies it (same confirmation). "⋯" or a long press opens a sheet
-with the address and:
+headed by the address and "Forwards to <destination>", with:
 
 - **Block trackers** switch: `PATCH /api/aliases/{id} {block_trackers}`. It
   shows the saved value only: disabled while the request runs, then the
   server's answer.
 - **Copy alias**.
-- **Delete alias**: asks first, with the website's text "<alias> stops
+- **Delete alias** (destructive text, no fill): asks first, with the
+  website's text without repeating the alias (it heads the sheet): "It stops
   receiving mail right away. This can't be undone, and the name won't be
-  reused." → `DELETE /api/aliases/{id}` (`204`). `404` counts as deleted
-  (gone already). Afterwards "Alias deleted" for 3 s.
+  reused." → `DELETE /api/aliases/{id}` (`204`); only this confirm button is
+  filled. `404` counts as deleted (gone already). Afterwards "Alias deleted"
+  for 3 s.
 
 Errors of these actions show inside the sheet; `payment_required` closes it
 and shows the payment notice; `404` on the switch closes it, says "This
@@ -393,24 +420,29 @@ aliases.
 
 - **List:** `GET /api/recipients` at every start/foreground of the screen and
   on pull-to-refresh, in server order (oldest first). Row: address, below it
-  "✓ Confirmed" or "Waiting for confirmation". A short intro line says that a
-  new address gets a confirmation email. Loading, failed first load (text +
-  Retry) and failed reload (list stays, error + Retry) as for aliases. Empty:
-  "No recipient addresses yet — add the inbox your aliases should forward
-  to."
+  a small badge, "Confirmed" (with a check) or "Pending" (with a clock);
+  screen readers hear "Recipient <email>, confirmed" or "…, waiting for
+  confirmation". First load: placeholder rows. Failed first load (text +
+  Retry) and failed reload (list stays, error + Retry) as for aliases.
+  Empty: a mail icon, "No recipient addresses yet" and "Your aliases forward
+  mail to these addresses. A new address gets a confirmation email; it can
+  receive mail once you open the link in it." (the pinned **Add recipient**
+  is the action).
 - **Add:** pinned **Add recipient** opens a sheet with the website's text
   "Enter the inbox that alias mail should be forwarded to. We'll send a
   confirmation email to verify the address.", an email field (no autofill, no
   autocorrect) and **Send confirmation email** → `POST /api/recipients
   {email}` (trimmed) → `201 Recipient` (unconfirmed). The address joins the
-  list and a line says "Confirmation email sent to <email>. Open the link in
-  it; the status here updates when the list reloads." The link opens on the
-  website (`/confirm-email`); the apps never confirm themselves.
+  list and a line says "Confirmation email sent to <email>" for 3 s. The
+  link opens on the website (`/confirm-email`); the apps never confirm
+  themselves.
 - **Actions** (tap or "⋯"): for an unconfirmed address the hint "The link
   works for 24 hours; a new one replaces it." and **Resend confirmation
   email** → `POST /api/recipients/{id}/resend` (`204`), then the same "sent"
-  line. **Delete recipient** asks first ("<email> is removed from your
-  account. An address that aliases still forward to can't be deleted.") →
+  line. The sheet is headed by the address and its badge. **Delete
+  recipient** (destructive text, no fill) asks first ("The address is
+  removed from your account. An address that aliases still forward to can't
+  be deleted.") →
   `DELETE /api/recipients/{id}` (`204`; `404` counts as deleted), then
   "Address deleted" for 3 s.
 - Errors of the add sheet and the actions show inside the sheet;
@@ -439,10 +471,19 @@ The AMS has no limit on the number of addresses yet, so there is no
 
 ## Account
 
-Account (the third tab of home; no back arrow) lists **Recipients**, **Devices**,
-**App lock** (switch, below), **Billing** ("Opens the website": `WEB_BASE/dashboard/billing` in the system
-browser, same fallback text as the payment notice), **Delete account**
-(destructive colour), then **Log out** and the app version.
+Account (the third tab of home; no back arrow; same side margin as the two
+alias tabs, so the heading stays in place between tabs) starts with a
+**status card** from `GET /auth/account` (read at every start of the tab),
+worded like the website's header: "Active until <MMM d, yyyy>" (phone's time
+zone), "Expired on <date>" with **Renew on the website**, or "Not active
+yet" with **Activate on the website** (both open billing). Until the first
+answer a placeholder keeps the card's place; without an answer there is no
+card. Then sections under small uppercase labels: **Mail** (Recipients),
+**Security** (Devices, Sign in a browser, **App lock** switch, below),
+**Account** (**Billing**, "Opens the website": `WEB_BASE/dashboard/billing`
+in the system browser, same fallback text as the payment notice) and, apart
+at the end, **Danger zone** (**Delete account** in the destructive colour),
+then **Log out** and the app version.
 
 ## App lock
 
@@ -498,7 +539,7 @@ every start/foreground of the screen and on pull-to-refresh. This device
 (`current: true`) comes first and is marked "This device"; each row shows the
 server's random name and "Signed in <MMM d, yyyy>" (`createdAt` in the
 phone's time zone; the server keeps nothing else about devices). Device ids
-are never shown or logged.
+are never shown or logged. First load: placeholder rows.
 
 A successful list **without this device** (no `current: true`, also an empty
 list) means it was signed out elsewhere: Auth still answers `GET /devices` to
@@ -507,7 +548,8 @@ the session locally like after a `401` (no logout call, the device is gone)
 and lands at the login screen with "You have been signed out. Log in again with your
 account number." Failed loads never count as signed out.
 
-- **Sign out one device:** its **Sign out** button asks first ("<name> is
+- **Sign out one device:** its sign-out icon button ("Sign out <name>")
+  asks first ("<name> is
   signed out right away. To log in there again, you'll need your account
   number.") → `DELETE /devices/{deviceId}` (`204`; `404` counts as done),
   then "<name> signed out" for 3 s. For this device the question is "Sign out

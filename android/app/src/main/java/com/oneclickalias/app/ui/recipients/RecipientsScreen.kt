@@ -40,15 +40,23 @@ import androidx.compose.ui.unit.dp
 import com.oneclickalias.app.R
 import com.oneclickalias.app.ui.aliases.ListStatus
 import com.oneclickalias.app.ui.components.NoPersonalizedLearning
+import com.oneclickalias.app.ui.components.OcaBadge
+import com.oneclickalias.app.ui.components.OcaBadgeTone
 import com.oneclickalias.app.ui.components.OcaButton
 import com.oneclickalias.app.ui.components.OcaButtonVariant
+import com.oneclickalias.app.ui.components.OcaEmptyState
 import com.oneclickalias.app.ui.components.OcaErrorText
+import com.oneclickalias.app.ui.components.OcaInlineMessage
 import com.oneclickalias.app.ui.components.OcaListError
+import com.oneclickalias.app.ui.components.OcaListRow
 import com.oneclickalias.app.ui.components.OcaListScaffold
 import com.oneclickalias.app.ui.components.OcaListStatusLine
+import com.oneclickalias.app.ui.components.OcaMessageTone
 import com.oneclickalias.app.ui.components.OcaNotice
 import com.oneclickalias.app.ui.components.OcaSheet
+import com.oneclickalias.app.ui.components.OcaSheetHeader
 import com.oneclickalias.app.ui.components.OcaSheetTitle
+import com.oneclickalias.app.ui.components.OcaSkeletonRows
 import com.oneclickalias.app.ui.components.OcaTextField
 import com.oneclickalias.app.ui.components.listItemWidth
 import com.oneclickalias.app.ui.theme.OcaSpacing
@@ -74,9 +82,6 @@ data class RecipientsCallbacks(
     val onOpenBilling: () -> Unit = {},
     val onDismissMessage: () -> Unit = {}
 )
-
-/** How long "Address deleted" stays; the other lines stay until the next action. */
-private const val CONFIRMATION_MILLIS = 3_000L
 
 /**
  * The recipient addresses: where aliases forward to. Rows show the address and
@@ -105,12 +110,6 @@ fun RecipientsScreen(state: RecipientsUiState, callbacks: RecipientsCallbacks, m
             OcaButton(text = "Add recipient", onClick = callbacks.onOpenAdd, modifier = Modifier.fillMaxWidth())
         }
     ) {
-        item(key = "intro") {
-            OcaListStatusLine(
-                "Your aliases forward mail to these addresses. A new address gets a confirmation email; it can " +
-                    "receive mail once you open the link in it."
-            )
-        }
         when (state.list) {
             ListStatus.Failed -> item(key = "failed") {
                 OcaListError(
@@ -121,7 +120,10 @@ fun RecipientsScreen(state: RecipientsUiState, callbacks: RecipientsCallbacks, m
                 )
             }
 
-            ListStatus.Loading -> item(key = "loading") { OcaListStatusLine("Loading your recipient addresses…") }
+            ListStatus.Loading -> item(key = "loading") {
+                // Right under the top bar, whose line is the first row's top line.
+                OcaSkeletonRows(description = "Loading your recipient addresses", topDivider = false)
+            }
 
             ListStatus.Ready -> {
                 state.listError?.let { error ->
@@ -136,14 +138,15 @@ fun RecipientsScreen(state: RecipientsUiState, callbacks: RecipientsCallbacks, m
                 }
                 if (state.recipients.isEmpty()) {
                     item(key = "empty") {
-                        OcaListStatusLine("No recipient addresses yet — add the inbox your aliases should forward to.")
-                    }
-                } else {
-                    item(key = "top-divider") {
-                        HorizontalDivider(
-                            thickness = 1.dp,
-                            color = OcaTheme.colors.border,
-                            modifier = Modifier.listItemWidth()
+                        // "Add recipient" is pinned below, so the empty state needs no button of its own.
+                        OcaEmptyState(
+                            icon = R.drawable.ic_mail,
+                            title = "No recipient addresses yet",
+                            body = "Your aliases forward mail to these addresses. A new address gets a " +
+                                "confirmation email; it can receive mail once you open the link in it.",
+                            modifier = Modifier
+                                .listItemWidth()
+                                .padding(horizontal = OcaSpacing.gutter, vertical = OcaSpacing.xxxl)
                         )
                     }
                 }
@@ -171,90 +174,52 @@ private fun statusText(recipient: Recipient): String =
 
 @Composable
 private fun RecipientRow(recipient: Recipient, onOpenActions: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClickLabel = "show actions", onClick = onOpenActions)
-            .heightIn(min = 64.dp)
-            .padding(start = OcaSpacing.gutter, end = OcaSpacing.xxs, top = OcaSpacing.sm, bottom = OcaSpacing.sm),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .clearAndSetSemantics {
-                    contentDescription = "Recipient ${recipient.email}, ${statusText(recipient).lowercase()}"
-                    onClick(label = "show actions") {
-                        onOpenActions()
-                        true
-                    }
-                },
-            verticalArrangement = Arrangement.spacedBy(OcaSpacing.xxs)
-        ) {
-            Text(
-                text = recipient.email,
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            RecipientStatus(recipient)
+    OcaListRow(
+        title = recipient.email,
+        detailContent = { RecipientStatus(recipient) },
+        onClick = onOpenActions,
+        onClickLabel = "show actions",
+        textSemantics = {
+            contentDescription = "Recipient ${recipient.email}, ${statusText(recipient).lowercase()}"
+        },
+        trailingIsButton = true,
+        trailing = {
+            IconButton(onClick = onOpenActions) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_more),
+                    contentDescription = "Actions for ${recipient.email}",
+                    tint = OcaTheme.colors.mutedForeground
+                )
+            }
         }
-        IconButton(onClick = onOpenActions) {
-            Icon(painter = painterResource(R.drawable.ic_more), contentDescription = "Actions for ${recipient.email}")
-        }
-    }
+    )
 }
 
-/** "✓ Confirmed" with a primary check, "Waiting for confirmation" muted. */
+/** A "Confirmed" badge with the primary check, or a quiet "Pending" one with a clock. */
 @Composable
 private fun RecipientStatus(recipient: Recipient) {
-    val c = OcaTheme.colors
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(OcaSpacing.xxs)) {
-        if (recipient.verified) {
-            Icon(
-                painter = painterResource(R.drawable.ic_check),
-                contentDescription = null,
-                tint = c.primary,
-                modifier = Modifier.size(14.dp)
-            )
-        }
-        Text(
-            text = statusText(recipient),
-            style = MaterialTheme.typography.bodySmall,
-            // Text in foreground, not primary: emerald text is too faint on the dark background.
-            color = if (recipient.verified) c.foreground else c.mutedForeground
-        )
+    if (recipient.verified) {
+        OcaBadge(text = "Confirmed", tone = OcaBadgeTone.Primary, icon = R.drawable.ic_check)
+    } else {
+        OcaBadge(text = "Pending", icon = R.drawable.ic_schedule)
     }
 }
 
+/** "Sent" and "deleted" close themselves; an error stays until the next action. */
 @Composable
 private fun MessageLine(message: RecipientsMessage, onDismiss: () -> Unit) {
     when (message) {
-        is RecipientsMessage.Error -> OcaErrorText(text = message.text)
+        is RecipientsMessage.Error -> OcaInlineMessage(text = message.text, tone = OcaMessageTone.Error)
 
-        is RecipientsMessage.ConfirmationSent -> QuietLine(
-            "Confirmation email sent to ${message.email}. Open the link in it; the status here updates " +
-                "when the list reloads."
+        is RecipientsMessage.ConfirmationSent -> OcaInlineMessage(
+            text = "Confirmation email sent to ${message.email}",
+            tone = OcaMessageTone.Success,
+            onTimeout = onDismiss
         )
 
-        is RecipientsMessage.Deleted -> {
-            QuietLine("Address deleted")
-            LaunchedEffect(message) {
-                delay(CONFIRMATION_MILLIS)
-                onDismiss()
-            }
-        }
+        is RecipientsMessage.Deleted ->
+            OcaInlineMessage(text = "Address deleted", tone = OcaMessageTone.Success, onTimeout = onDismiss)
     }
-}
-
-@Composable
-private fun QuietLine(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodyMedium,
-        color = OcaTheme.colors.mutedForeground,
-        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
-    )
 }
 
 /** Same wording as the website's "Add email" dialog (OCA-frontend/src/email-dialog.tsx). */
@@ -302,17 +267,15 @@ private fun AddRecipientContent(adding: AddRecipient, callbacks: RecipientsCallb
 @Composable
 private fun RecipientActionsContent(actions: RecipientActions, callbacks: RecipientsCallbacks) {
     val recipient = actions.recipient
+    OcaSheetHeader(
+        title = recipient.email,
+        titleStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+        subtitle = { RecipientStatus(recipient) }
+    )
     Column(
         modifier = Modifier.padding(horizontal = OcaSpacing.gutter),
         verticalArrangement = Arrangement.spacedBy(OcaSpacing.md)
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(OcaSpacing.xxs)) {
-            Text(
-                text = recipient.email,
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
-            )
-            RecipientStatus(recipient)
-        }
         if (actions.confirmingDelete) {
             DeleteConfirmation(actions = actions, callbacks = callbacks)
         } else {
@@ -334,7 +297,7 @@ private fun RecipientActionsContent(actions: RecipientActions, callbacks: Recipi
             OcaButton(
                 text = "Delete recipient",
                 onClick = callbacks.onRequestDelete,
-                variant = OcaButtonVariant.Destructive,
+                variant = OcaButtonVariant.DestructiveGhost,
                 enabled = !actions.working,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -352,8 +315,8 @@ private fun DeleteConfirmation(actions: RecipientActions, callbacks: RecipientsC
             modifier = Modifier.semantics { heading() }
         )
         Text(
-            text = "${actions.recipient.email} is removed from your account. An address that aliases still " +
-                "forward to can't be deleted.",
+            text = "The address is removed from your account. An address that aliases still forward to " +
+                "can't be deleted.",
             style = MaterialTheme.typography.bodyMedium,
             color = OcaTheme.colors.mutedForeground
         )

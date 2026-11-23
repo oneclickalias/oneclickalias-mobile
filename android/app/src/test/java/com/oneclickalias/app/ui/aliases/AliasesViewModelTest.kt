@@ -357,4 +357,30 @@ class AliasesViewModelTest {
         val url = server.url("/dashboard/billing").toString()
         assertEquals(AliasesMessage.Error(AliasMessages.noBrowser(url)), vm.state.value.message)
     }
+
+    // Groups
+
+    @Test
+    fun `groups start collapsed and a toggle opens and closes one`() = runTest {
+        ams.addAlias("home-alias-1111", ams.addRecipient("r-home", "home@example.com"))
+        val vm = loaded()
+
+        assertEquals(emptySet<String>(), vm.state.value.expandedGroups)
+        vm.toggleGroup("home@example.com")
+        assertEquals(setOf("home@example.com"), vm.state.value.expandedGroups)
+        vm.toggleGroup("home@example.com")
+        assertEquals(emptySet<String>(), vm.state.value.expandedGroups)
+    }
+
+    @Test
+    fun `an open group stays open across a reload`() = runTest {
+        ams.addAlias("home-alias-1111", ams.addRecipient("r-home", "home@example.com"))
+        val vm = loaded()
+        vm.toggleGroup("home@example.com")
+
+        vm.load()
+        eventually { !vm.state.value.loading }
+
+        assertEquals(setOf("home@example.com"), vm.state.value.expandedGroups)
+    }
 }

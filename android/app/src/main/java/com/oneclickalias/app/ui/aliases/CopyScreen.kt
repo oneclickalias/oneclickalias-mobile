@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -37,6 +38,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -46,6 +49,11 @@ import com.oneclickalias.app.R
 import com.oneclickalias.app.ui.components.OcaButton
 import com.oneclickalias.app.ui.components.OcaButtonVariant
 import com.oneclickalias.app.ui.components.OcaErrorText
+import com.oneclickalias.app.ui.components.OcaInlineMessage
+import com.oneclickalias.app.ui.components.OcaMessageTone
+import com.oneclickalias.app.ui.components.OcaSkeleton
+import com.oneclickalias.app.ui.components.OcaSkeletonBlock
+import com.oneclickalias.app.ui.components.OcaSkeletonSquare
 import com.oneclickalias.app.ui.theme.GeistMono
 import com.oneclickalias.app.ui.theme.OcaSpacing
 import com.oneclickalias.app.ui.theme.OcaTheme
@@ -63,9 +71,6 @@ data class CopyCallbacks(
     val onOpenRecipients: (addNew: Boolean) -> Unit = {},
     val onDismissMessage: () -> Unit = {}
 )
-
-/** How long "Copied"/"Removed" stay. */
-private const val CONFIRMATION_MILLIS = 3_000L
 
 /**
  * The "New alias" tab: one card per confirmed recipient with its ready alias
@@ -128,15 +133,13 @@ private fun CopyStatusBar(state: CopyUiState, callbacks: CopyCallbacks) {
             verticalArrangement = Arrangement.spacedBy(OcaSpacing.xs)
         ) {
             if (reloadError != null) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    OcaErrorText(text = reloadError, modifier = Modifier.weight(1f))
-                    OcaButton(
-                        text = "Retry",
-                        onClick = callbacks.onRetry,
-                        variant = OcaButtonVariant.Ghost,
-                        enabled = !state.loading
-                    )
-                }
+                OcaInlineMessage(
+                    text = reloadError,
+                    tone = OcaMessageTone.Error,
+                    action = "Retry",
+                    actionEnabled = !state.loading,
+                    onAction = callbacks.onRetry
+                )
             }
             state.message?.let { MessageLine(it, callbacks.onDismissMessage) }
         }
@@ -170,12 +173,7 @@ private fun CopyContent(state: CopyUiState, callbacks: CopyCallbacks) {
                             )
                         }
 
-                    state.list == ListStatus.Loading -> Text(
-                        text = "Loading…",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = OcaTheme.colors.mutedForeground,
-                        modifier = itemModifier
-                    )
+                    state.list == ListStatus.Loading -> CardSkeletons(itemModifier)
 
                     state.paymentRequired ->
                         Column(itemModifier) { PaymentNotice(onOpenBilling = callbacks.onOpenBilling) }
@@ -187,13 +185,22 @@ private fun CopyContent(state: CopyUiState, callbacks: CopyCallbacks) {
                         )
                     }
 
-                    else -> state.cards.forEach { card ->
-                        AliasCard(
-                            card = card,
-                            onCopy = { callbacks.onCopy(card.recipient.id) },
-                            onRetry = callbacks.onRetry,
-                            modifier = itemModifier
-                        )
+                    else -> {
+                        state.cards.forEach { card ->
+                            AliasCard(
+                                card = card,
+                                onCopy = { callbacks.onCopy(card.recipient.id) },
+                                onRetry = callbacks.onRetry,
+                                modifier = itemModifier
+                            )
+                        }
+                        if (state.pendingRecipients > 0) {
+                            PendingLine(
+                                count = state.pendingRecipients,
+                                onClick = { callbacks.onOpenRecipients(false) },
+                                modifier = itemModifier
+                            )
+                        }
                     }
                 }
             }
@@ -259,7 +266,7 @@ private fun AliasCard(card: CopyCard, onCopy: () -> Unit, onRetry: () -> Unit, m
                     onClick == null -> c.mutedForeground.copy(alpha = 0.4f)
                     else -> c.mutedForeground
                 },
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
         when {
@@ -275,13 +282,24 @@ private fun AliasCard(card: CopyCard, onCopy: () -> Unit, onRetry: () -> Unit, m
             )
         }
         when {
-            waitingOnline -> Text(
-                text = "Copied. Go online to activate this alias — until then it doesn't receive mail. " +
-                    "Tap to copy it again.",
-                style = MaterialTheme.typography.bodySmall,
-                color = c.destructive,
-                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
-            )
+            // A state to know about, not a failure: no error red.
+            waitingOnline -> Row(
+                modifier = Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
+                horizontalArrangement = Arrangement.spacedBy(OcaSpacing.xs)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_info),
+                    contentDescription = null,
+                    tint = c.foreground,
+                    modifier = Modifier.padding(top = 1.dp).size(14.dp)
+                )
+                Text(
+                    text = "Copied. Go online to activate this alias — until then it doesn't receive mail. " +
+                        "Tap to copy it again.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = c.foreground
+                )
+            }
 
             card.error != null -> Text(
                 text = "Tap to try again.",
@@ -301,8 +319,14 @@ private val AddressHeight = 32.dp
  */
 @Composable
 private fun FullAddress(alias: String) {
+    val muted = OcaTheme.colors.mutedForeground
+    val at = alias.lastIndexOf('@')
     BasicText(
-        text = alias,
+        // The domain is muted as in the alias list: the name tells aliases apart.
+        text = buildAnnotatedString {
+            append(alias)
+            if (at >= 0) addStyle(SpanStyle(color = muted), at, alias.length)
+        },
         style = MaterialTheme.typography.headlineSmall.copy(
             fontFamily = GeistMono,
             fontWeight = FontWeight.Medium,
@@ -321,18 +345,79 @@ private fun FullAddress(alias: String) {
 
 @Composable
 private fun MessageLine(message: CopyMessage, onDismiss: () -> Unit) {
-    Text(
-        text = when (message) {
-            CopyMessage.Copied -> "Copied to clipboard"
-            CopyMessage.Removed -> "The alias you copied was removed — copy the new one."
-        },
-        style = MaterialTheme.typography.bodyMedium,
-        color = OcaTheme.colors.mutedForeground,
-        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
-    )
-    LaunchedEffect(message) {
-        delay(CONFIRMATION_MILLIS)
-        onDismiss()
+    when (message) {
+        CopyMessage.Copied ->
+            OcaInlineMessage(text = "Copied to clipboard", tone = OcaMessageTone.Success, onTimeout = onDismiss)
+
+        CopyMessage.Removed -> OcaInlineMessage(
+            text = "The alias you copied was removed — copy the new one.",
+            tone = OcaMessageTone.Info,
+            onTimeout = onDismiss
+        )
+    }
+}
+
+/** Card placeholders while the first load runs, shaped like [AliasCard]. */
+@Composable
+private fun CardSkeletons(modifier: Modifier) {
+    OcaSkeleton(
+        description = "Loading your aliases",
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(OcaSpacing.md)
+    ) {
+        listOf(120.dp, 152.dp).forEach { width ->
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(OcaTheme.colors.card)
+                    .border(1.dp, OcaTheme.colors.border)
+                    .padding(OcaSpacing.md),
+                verticalArrangement = Arrangement.spacedBy(OcaSpacing.sm)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(OcaSpacing.sm)
+                ) {
+                    OcaSkeletonSquare(size = 22.dp)
+                    OcaSkeletonBlock(height = 10.dp, width = width)
+                }
+                Box(modifier = Modifier.heightIn(min = AddressHeight), contentAlignment = Alignment.CenterStart) {
+                    OcaSkeletonBlock(height = 18.dp, modifier = Modifier.fillMaxWidth(0.85f))
+                }
+            }
+        }
+    }
+}
+
+/** Recipients still waiting for their confirmation link; a tap opens the recipient screen. */
+@Composable
+private fun PendingLine(count: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val text = if (count == 1) "1 inbox is waiting for confirmation" else "$count inboxes are waiting for confirmation"
+    Row(
+        modifier = modifier
+            .clickable(role = Role.Button, onClickLabel = "open recipients", onClick = onClick)
+            .heightIn(min = 48.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(OcaSpacing.xs)
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_schedule),
+            contentDescription = null,
+            tint = OcaTheme.colors.mutedForeground,
+            modifier = Modifier.size(16.dp)
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = OcaTheme.colors.mutedForeground,
+            modifier = Modifier.weight(1f)
+        )
+        Icon(
+            painter = painterResource(R.drawable.ic_chevron_right),
+            contentDescription = null,
+            tint = OcaTheme.colors.mutedForeground,
+            modifier = Modifier.size(16.dp)
+        )
     }
 }
 

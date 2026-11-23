@@ -47,8 +47,9 @@ fun CreateAccountScreen(
     modifier: Modifier = Modifier,
     onSaveToPasswordManager: (() -> Unit)? = null
 ) {
-    // No screenshots or app-switcher thumbnail while the number is on screen.
-    SecureWindow(enabled = state is CreateAccountUiState.Ready)
+    // No screenshots or app-switcher thumbnail while the number is on screen. Set already
+    // while creating: the flag applies a frame late, the number must not be drawn before.
+    SecureWindow(enabled = state is CreateAccountUiState.Creating || state is CreateAccountUiState.Ready)
     OcaFlowScaffold(
         topBar = { OcaBackBar(onBack = onBack) },
         modifier = modifier,

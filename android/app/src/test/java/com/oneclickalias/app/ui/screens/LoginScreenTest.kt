@@ -180,12 +180,10 @@ class LoginScreenTest {
     @Test
     fun `unconfirmed registration shows the confirmation`() {
         state =
-            LoginUiState(
-                digits = "4711000012345678",
-                needsConfirmation = true,
-                error = AuthMessages.CONFIRM_TO_CONTINUE
-            )
+            LoginUiState(digits = "4711000012345678", needsConfirmation = true)
         show()
+
+        compose.onNodeWithText(AuthMessages.CONFIRM_TO_CONTINUE).assertIsDisplayed()
 
         compose.onNodeWithText("Confirm and log in", ignoreCase = true).assertIsNotEnabled()
         compose.onNodeWithText("I saved my account number").performScrollTo().performClick()

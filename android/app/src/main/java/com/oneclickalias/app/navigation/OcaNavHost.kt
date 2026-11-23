@@ -2,6 +2,8 @@ package com.oneclickalias.app.navigation
 
 import android.os.SystemClock
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -157,7 +159,15 @@ fun OcaNavHost(
     NavHost(
         navController = navController,
         startDestination = if (startSignedIn) SignedInGraph else SignedOutGraph,
-        modifier = modifier
+        modifier = modifier,
+        // Screens switch at once, like the tabs: no fade (the default) and no shrinking on the
+        // back gesture; while the finger is down the screen stays put.
+        enterTransition = { EnterTransition.None },
+        exitTransition = { ExitTransition.None },
+        popEnterTransition = { EnterTransition.None },
+        popExitTransition = { ExitTransition.None },
+        predictivePopEnterTransition = { _ -> EnterTransition.None },
+        predictivePopExitTransition = { _ -> ExitTransition.None }
     ) {
         navigation<SignedOutGraph>(startDestination = SignInRoute) {
             composable<SignInRoute> {
@@ -291,13 +301,22 @@ fun OcaNavHost(
                                 onStopOrDispose { }
                             }
                             val state by vm.state.collectAsStateWithLifecycle()
-                            val callbacks = remember(vm) { vm.callbacks() }
+                            val callbacks = remember(vm) {
+                                vm.callbacks().copy(onOpenNewAlias = { homeTab = HomeTab.NewAlias })
+                            }
                             AliasesScreen(state = state, callbacks = callbacks)
                         }
 
                         HomeTab.Account -> {
                             val vm = viewModel {
-                                AccountViewModel(sessions, container.webLinks, container.endpoints.webBase)
+                                AccountViewModel(sessions, container.webLinks, container.endpoints.webBase) {
+                                    sessions.accountStatus()
+                                }
+                            }
+                            // Every start reads the status again: a payment on the website shows after the return.
+                            LifecycleStartEffect(vm) {
+                                vm.load()
+                                onStopOrDispose { }
                             }
                             val state by vm.state.collectAsStateWithLifecycle()
                             AccountScreen(

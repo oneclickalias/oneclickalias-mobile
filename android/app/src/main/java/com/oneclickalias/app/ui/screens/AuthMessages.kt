@@ -15,7 +15,10 @@ object AuthMessages {
     const val INVALID_NUMBER = "Invalid account number — check that it has exactly 16 digits."
     const val NOT_CONFIRMED =
         "Your registration isn't complete yet — confirm that you've saved your account number."
-    const val CONFIRM_TO_CONTINUE = "Please confirm that you've saved your account number."
+
+    /** Shown above the "I saved my account number" box when the server asks for it (not as an error). */
+    const val CONFIRM_TO_CONTINUE =
+        "This account was just created. Confirm that you saved its number to finish signing up."
     const val DEVICE_LIMIT =
         "Device limit reached — sign out another device first, or sign out all devices."
     const val ACCOUNT_BLOCKED = "Your account is suspended — changes are not possible. You can still contact support."
