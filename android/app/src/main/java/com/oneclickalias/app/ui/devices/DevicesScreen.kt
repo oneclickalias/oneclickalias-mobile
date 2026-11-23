@@ -8,12 +8,15 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -24,14 +27,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.oneclickalias.app.R
 import com.oneclickalias.app.ui.aliases.ListStatus
+import com.oneclickalias.app.ui.components.OcaBadge
 import com.oneclickalias.app.ui.components.OcaButton
 import com.oneclickalias.app.ui.components.OcaButtonVariant
 import com.oneclickalias.app.ui.components.OcaErrorText
+import com.oneclickalias.app.ui.components.OcaInlineMessage
 import com.oneclickalias.app.ui.components.OcaListError
+import com.oneclickalias.app.ui.components.OcaListRow
 import com.oneclickalias.app.ui.components.OcaListScaffold
 import com.oneclickalias.app.ui.components.OcaListStatusLine
+import com.oneclickalias.app.ui.components.OcaMessageTone
 import com.oneclickalias.app.ui.components.OcaSheet
+import com.oneclickalias.app.ui.components.OcaSkeletonRows
 import com.oneclickalias.app.ui.components.listItemWidth
 import com.oneclickalias.app.ui.theme.OcaSpacing
 import com.oneclickalias.app.ui.theme.OcaTheme
@@ -54,8 +63,6 @@ data class DevicesCallbacks(
     val onSignOutAll: () -> Unit = {},
     val onDismissMessage: () -> Unit = {}
 )
-
-private const val CONFIRMATION_MILLIS = 3_000L
 
 private val signedInFormat = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.US)
 
@@ -86,18 +93,11 @@ fun DevicesScreen(state: DevicesUiState, callbacks: DevicesCallbacks, modifier: 
         bottom = state.message?.let { message ->
             {
                 when (message) {
-                    is DevicesMessage.SignedOut -> {
-                        Text(
-                            text = "${message.name} signed out",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = OcaTheme.colors.mutedForeground,
-                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
-                        )
-                        LaunchedEffect(message) {
-                            delay(CONFIRMATION_MILLIS)
-                            callbacks.onDismissMessage()
-                        }
-                    }
+                    is DevicesMessage.SignedOut -> OcaInlineMessage(
+                        text = "${message.name} signed out",
+                        tone = OcaMessageTone.Success,
+                        onTimeout = callbacks.onDismissMessage
+                    )
                 }
             }
         }
@@ -117,7 +117,7 @@ fun DevicesScreen(state: DevicesUiState, callbacks: DevicesCallbacks, modifier: 
                 )
             }
 
-            ListStatus.Loading -> item(key = "loading") { OcaListStatusLine("Loading your devices…") }
+            ListStatus.Loading -> item(key = "loading") { OcaSkeletonRows(description = "Loading your devices") }
 
             ListStatus.Ready -> {
                 state.listError?.let { error ->
@@ -152,58 +152,32 @@ fun DevicesScreen(state: DevicesUiState, callbacks: DevicesCallbacks, modifier: 
     }
 }
 
+/** Name, sign-in date and a sign-out button, which asks before it signs out. */
 @Composable
 private fun DeviceRow(device: Device, onSignOut: () -> Unit) {
     val detail = signedInText(device.createdAt)
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 64.dp)
-            .padding(start = OcaSpacing.gutter, end = OcaSpacing.xxs, top = OcaSpacing.sm, bottom = OcaSpacing.sm),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .clearAndSetSemantics {
-                    contentDescription = listOfNotNull(
-                        "Device ${device.name}",
-                        "this device".takeIf { device.current },
-                        detail?.replaceFirstChar { it.lowercase() }
-                    ).joinToString(", ")
-                },
-            verticalArrangement = Arrangement.spacedBy(OcaSpacing.xxs)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(OcaSpacing.xs)
-            ) {
-                Text(
-                    text = device.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
+    OcaListRow(
+        title = device.name,
+        detail = detail,
+        titleExtra = if (device.current) ({ OcaBadge(text = "This device") }) else null,
+        textSemantics = {
+            contentDescription = listOfNotNull(
+                "Device ${device.name}",
+                "this device".takeIf { device.current },
+                detail?.replaceFirstChar { it.lowercase() }
+            ).joinToString(", ")
+        },
+        trailingIsButton = true,
+        trailing = {
+            IconButton(onClick = onSignOut) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_logout),
+                    contentDescription = "Sign out ${device.name}",
+                    tint = OcaTheme.colors.mutedForeground
                 )
-                if (device.current) {
-                    Text(
-                        text = "This device",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = OcaTheme.colors.mutedForeground
-                    )
-                }
-            }
-            detail?.let {
-                Text(text = it, style = MaterialTheme.typography.bodySmall, color = OcaTheme.colors.mutedForeground)
             }
         }
-        OcaButton(
-            text = "Sign out",
-            onClick = onSignOut,
-            variant = OcaButtonVariant.Ghost,
-            modifier = Modifier.semantics { contentDescription = "Sign out ${device.name}" }
-        )
-    }
+    )
 }
 
 /** Website wording (OCA-frontend/src/pages/Sessions.tsx). */
@@ -224,10 +198,11 @@ private fun SignOutAllSection(onSignOutAll: () -> Unit) {
             style = MaterialTheme.typography.bodyMedium,
             color = OcaTheme.colors.mutedForeground
         )
+        // The way in; the next screen's button, after the account number, is the filled one.
         OcaButton(
             text = "Sign out all devices",
             onClick = onSignOutAll,
-            variant = OcaButtonVariant.Destructive,
+            variant = OcaButtonVariant.DestructiveGhost,
             modifier = Modifier.fillMaxWidth().padding(top = OcaSpacing.xs)
         )
     }

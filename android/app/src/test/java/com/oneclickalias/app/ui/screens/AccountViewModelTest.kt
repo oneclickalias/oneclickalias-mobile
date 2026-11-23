@@ -13,6 +13,8 @@ import com.oneclickalias.app.testing.FakeAuthBackend.Companion.DEVICE
 import com.oneclickalias.app.testing.FakeWebLinks
 import com.oneclickalias.app.testing.MainDispatcherRule
 import com.oneclickalias.app.testing.eventually
+import com.oneclickalias.contracts.auth.AccountStatus
+import java.time.ZoneId
 import kotlinx.coroutines.test.runTest
 import mockwebserver3.MockWebServer
 import org.junit.After
@@ -96,5 +98,41 @@ class AccountViewModelTest {
 
         val url = server.url("/dashboard/billing").toString()
         assertEquals("No browser app found — open $url in a browser.", vm.state.value.message)
+    }
+
+    private suspend fun statusViewModel(): AccountViewModel {
+        val sessions = SessionManager(AuthApi(ApiTransport(createHttpClient()), server.url("/")), store)
+        sessions.restore()
+        return AccountViewModel(sessions, links, server.url("/")) { sessions.accountStatus() }
+    }
+
+    @Test
+    fun `load shows until when the account is paid`() = runTest {
+        val vm = statusViewModel()
+
+        vm.load()
+
+        eventually { vm.state.value.paidState != null }
+        assertTrue(vm.state.value.paidState is PaidState.Active)
+    }
+
+    @Test
+    fun `an unreadable status shows no status at all`() = runTest {
+        backend.accountStatusResponse = { FakeAuthBackend.error(500, "internal_error") }
+        val vm = statusViewModel()
+
+        vm.load()
+
+        eventually { vm.state.value.statusLoaded }
+        assertNull(vm.state.value.paidState)
+    }
+
+    @Test
+    fun `paid, expired and never paid read like the website`() {
+        val utc = ZoneId.of("UTC")
+
+        assertEquals(PaidState.Active("Dec 10, 2026"), paidState(AccountStatus(true, "2026-12-10T10:00:00Z"), utc))
+        assertEquals(PaidState.Expired("Nov 1, 2026"), paidState(AccountStatus(false, "2026-11-01T10:00:00Z"), utc))
+        assertEquals(PaidState.NotActive, paidState(AccountStatus(false, null), utc))
     }
 }

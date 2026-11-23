@@ -19,7 +19,16 @@ import com.oneclickalias.app.ui.theme.OcaTheme
 import java.util.Locale
 
 /** Mirrors the website's button variants (OCA-frontend/src/components/ui/button.tsx). */
-enum class OcaButtonVariant { Primary, Secondary, Outline, Destructive, Ghost }
+enum class OcaButtonVariant {
+    Primary,
+    Secondary,
+    Outline,
+    Destructive,
+    Ghost,
+
+    /** Destructive text without a fill: the way into a destructive step, whose confirm button is [Destructive]. */
+    DestructiveGhost
+}
 
 object OcaButtonDefaults {
     /** 48dp instead of the website's 40px: the Android minimum touch target. */
@@ -47,6 +56,7 @@ fun OcaButton(
         OcaButtonVariant.Outline -> Color.Transparent to c.foreground
         OcaButtonVariant.Destructive -> c.destructive.copy(alpha = 0.2f) to c.destructive
         OcaButtonVariant.Ghost -> Color.Transparent to c.foreground
+        OcaButtonVariant.DestructiveGhost -> Color.Transparent to c.destructive
     }
     Button(
         onClick = onClick,

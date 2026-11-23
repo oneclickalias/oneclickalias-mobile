@@ -33,6 +33,7 @@ import com.oneclickalias.app.ui.components.OcaButton
 import com.oneclickalias.app.ui.components.OcaButtonVariant
 import com.oneclickalias.app.ui.components.OcaErrorText
 import com.oneclickalias.app.ui.components.OcaSheet
+import com.oneclickalias.app.ui.components.OcaSheetHeader
 import com.oneclickalias.app.ui.components.OcaSheetTitle
 import com.oneclickalias.app.ui.components.OcaSwitchRow
 import com.oneclickalias.app.ui.theme.GeistMono
@@ -53,21 +54,21 @@ internal fun AliasSheets(state: AliasesUiState, callbacks: AliasesCallbacks) {
 @Composable
 private fun AliasActionsContent(actions: AliasActions, callbacks: AliasesCallbacks) {
     val alias = actions.alias
-    Column(
-        modifier = Modifier.padding(horizontal = OcaSpacing.gutter),
-        verticalArrangement = Arrangement.spacedBy(OcaSpacing.md)
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(OcaSpacing.xxs)) {
-            Text(
-                text = aliasDisplayText(alias.alias),
-                style = MaterialTheme.typography.bodyLarge.copy(fontFamily = GeistMono, fontWeight = FontWeight.Medium)
-            )
+    OcaSheetHeader(
+        title = aliasDisplayText(alias.alias),
+        titleStyle = MaterialTheme.typography.bodyLarge.copy(fontFamily = GeistMono, fontWeight = FontWeight.Medium),
+        subtitle = {
             Text(
                 text = "Forwards to ${alias.destEmail}",
                 style = MaterialTheme.typography.bodySmall,
                 color = OcaTheme.colors.mutedForeground
             )
         }
+    )
+    Column(
+        modifier = Modifier.padding(horizontal = OcaSpacing.gutter),
+        verticalArrangement = Arrangement.spacedBy(OcaSpacing.md)
+    ) {
         if (actions.confirmingDelete) {
             DeleteConfirmation(actions = actions, callbacks = callbacks)
         } else {
@@ -88,7 +89,7 @@ private fun AliasActionsContent(actions: AliasActions, callbacks: AliasesCallbac
             OcaButton(
                 text = "Delete alias",
                 onClick = callbacks.onRequestDelete,
-                variant = OcaButtonVariant.Destructive,
+                variant = OcaButtonVariant.DestructiveGhost,
                 enabled = !actions.saving,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -108,7 +109,7 @@ private fun TrackerSwitch(checked: Boolean, enabled: Boolean, onChange: (Boolean
     )
 }
 
-/** Same wording as the website (OCA-frontend/src/delete-alias-dialog.tsx). */
+/** Wording of the website (OCA-frontend/src/delete-alias-dialog.tsx), without repeating the alias. */
 @Composable
 private fun DeleteConfirmation(actions: AliasActions, callbacks: AliasesCallbacks) {
     Column(verticalArrangement = Arrangement.spacedBy(OcaSpacing.xs)) {
@@ -118,8 +119,8 @@ private fun DeleteConfirmation(actions: AliasActions, callbacks: AliasesCallback
             modifier = Modifier.semantics { heading() }
         )
         Text(
-            text = "${actions.alias.alias} stops receiving mail right away. " +
-                "This can't be undone, and the name won't be reused.",
+            // The alias is the sheet's title right above.
+            text = "It stops receiving mail right away. This can't be undone, and the name won't be reused.",
             style = MaterialTheme.typography.bodyMedium,
             color = OcaTheme.colors.mutedForeground
         )

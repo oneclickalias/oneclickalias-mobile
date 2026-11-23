@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -16,6 +17,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.oneclickalias.app.data.lock.AppLockState
 import com.oneclickalias.app.ui.theme.OcaTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -56,8 +58,8 @@ class AccountScreenTest {
         show(onLogout = { logouts++ })
 
         compose.onNodeWithText("Account").assertIsDisplayed()
-        compose.onNodeWithText("Recipients").performClick()
-        compose.onNodeWithText("Devices").performClick()
+        compose.onNodeWithText("Recipients").performScrollTo().performClick()
+        compose.onNodeWithText("Devices").performScrollTo().performClick()
         compose.onNodeWithText("Billing").performScrollTo().performClick()
         compose.onNodeWithText("Delete account").performScrollTo().performClick()
         compose.onNodeWithText("Version 0.1.0").assertIsDisplayed()
@@ -147,5 +149,46 @@ class AccountScreenTest {
         show()
 
         compose.onNodeWithText("Version 0.1.0").assertIsDisplayed()
+    }
+
+    @Test
+    fun `an active account shows until when, without a billing button`() {
+        show(state = AccountUiState(paidState = PaidState.Active("Dec 10, 2026")))
+
+        compose.onNodeWithText("Active until Dec 10, 2026").assertIsDisplayed()
+        compose.onNodeWithText("Renew on the website", ignoreCase = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `an expired account leads to billing`() {
+        show(state = AccountUiState(paidState = PaidState.Expired("Nov 1, 2026")))
+
+        compose.onNodeWithText("Expired on Nov 1, 2026").assertIsDisplayed()
+        compose.onNodeWithText("Renew on the website", ignoreCase = true).performClick()
+
+        assertEquals(listOf("billing"), calls)
+    }
+
+    @Test
+    fun `a never paid account says it is not active yet`() {
+        show(state = AccountUiState(paidState = PaidState.NotActive))
+
+        compose.onNodeWithText("Not active yet").assertIsDisplayed()
+        compose.onNodeWithText("Activate on the website", ignoreCase = true).performClick()
+
+        assertEquals(listOf("billing"), calls)
+    }
+
+    @Test
+    fun `the areas are grouped, delete account apart at the end`() {
+        show()
+
+        compose.onNodeWithText("Mail", ignoreCase = true).assertIsDisplayed()
+        compose.onNodeWithText("Security", ignoreCase = true).performScrollTo().assertIsDisplayed()
+        val danger = compose.onNodeWithText("Danger zone", ignoreCase = true).performScrollTo()
+            .getUnclippedBoundsInRoot()
+        val delete = compose.onNodeWithText("Delete account").getUnclippedBoundsInRoot()
+        val billing = compose.onNodeWithText("Billing").getUnclippedBoundsInRoot()
+        assertTrue(billing.top < danger.top && danger.top < delete.top)
     }
 }

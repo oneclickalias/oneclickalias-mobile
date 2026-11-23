@@ -4,9 +4,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
@@ -65,7 +67,9 @@ class AliasesScreenTest {
         onCancelDelete = { calls += "cancel delete" },
         onConfirmDelete = { calls += "confirm delete" },
         onOpenBilling = { calls += "billing" },
-        onDismissMessage = { calls += "dismiss message" }
+        onDismissMessage = { calls += "dismiss message" },
+        onToggleGroup = { calls += "toggle $it" },
+        onOpenNewAlias = { calls += "new alias" }
     )
 
     private fun show(state: AliasesUiState) {
@@ -111,17 +115,22 @@ class AliasesScreenTest {
     }
 
     @Test
-    fun `empty list says how to start`() {
+    fun `empty list says how to start and leads to the New alias tab`() {
         show(ready.copy(aliases = emptyList()))
 
-        compose.onNodeWithText("No aliases yet", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("No aliases yet").assertIsDisplayed()
+        compose.onNodeWithText("grouped by the inbox they forward to", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Go to New alias", ignoreCase = true).performClick()
+
+        assertEquals(listOf("new alias"), calls)
     }
 
     @Test
-    fun `first load shows a loading line`() {
+    fun `first load shows placeholders instead of a text line`() {
         show(AliasesUiState(loading = true))
 
-        compose.onNodeWithText("Loading your aliases…").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Loading your aliases").assertIsDisplayed()
+        compose.onNodeWithText("Loading", substring = true).assertDoesNotExist()
     }
 
     @Test
@@ -177,7 +186,12 @@ class AliasesScreenTest {
     fun `aliases are grouped under the address they forward to`() {
         val toWork = alias.copy(id = "a2", alias = "brave-heron-5678@alias.test", destEmail = "work@example.com")
         val older = alias.copy(id = "a3", alias = "calm-lynx-9012@alias.test")
-        show(ready.copy(aliases = listOf(toWork, alias, older)))
+        show(
+            ready.copy(
+                aliases = listOf(toWork, alias, older),
+                expandedGroups = setOf("work@example.com", "home@example.com")
+            )
+        )
 
         fun top(description: String) =
             compose.onNode(hasContentDescription(description, substring = true)).fetchSemanticsNode().positionInRoot.y
@@ -264,5 +278,56 @@ class AliasesScreenTest {
 
         compose.onNode(hasContentDescription("Alias quiet-otter-1234@alias.test", substring = true)).assertIsDisplayed()
         compose.onNodeWithText("Your account is not active yet").assertIsDisplayed()
+    }
+
+    private val toWork = alias.copy(id = "a2", alias = "brave-heron-5678@alias.test", destEmail = "work@example.com")
+
+    @Test
+    fun `with several recipients the groups start collapsed and a tap opens one`() {
+        show(ready.copy(aliases = listOf(toWork, alias)))
+
+        compose.onNode(hasContentDescription("Forwards to home@example.com, 1 alias")).assertIsDisplayed()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Collapsed"))
+            .performClick()
+        compose.onNode(hasContentDescription("Alias quiet-otter-1234@alias.test", substring = true))
+            .assertDoesNotExist()
+
+        assertEquals(listOf("toggle home@example.com"), calls)
+    }
+
+    @Test
+    fun `an open group shows its aliases under its head`() {
+        show(ready.copy(aliases = listOf(toWork, alias), expandedGroups = setOf("home@example.com")))
+
+        compose.onNode(hasContentDescription("Forwards to home@example.com, 1 alias"))
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Expanded"))
+        compose.onNode(hasContentDescription("Alias quiet-otter-1234@alias.test", substring = true)).assertIsDisplayed()
+        compose.onNode(hasContentDescription("Alias brave-heron-5678@alias.test", substring = true))
+            .assertDoesNotExist()
+    }
+
+    @Test
+    fun `a single group is always open`() {
+        show(ready)
+
+        compose.onNode(hasContentDescription("Alias quiet-otter-1234@alias.test", substring = true)).assertIsDisplayed()
+        compose.onNode(hasContentDescription("Forwards to home@example.com, 1 alias")).assertHasNoClickAction()
+    }
+
+    @Test
+    fun `an alias that lets trackers through says so in the list`() {
+        show(ready.copy(aliases = listOf(alias.copy(blockTrackers = false))))
+
+        // The badge is part of the row's description, which screen readers hear as one.
+        compose.onNode(hasContentDescription("Alias quiet-otter-1234@alias.test", substring = true))
+            .assertIsDisplayed()
+            .assert(hasContentDescription("trackers allowed", substring = true))
+    }
+
+    @Test
+    fun `blocking trackers needs no label in the list`() {
+        show(ready)
+
+        compose.onNode(hasContentDescription("trackers allowed", substring = true)).assertDoesNotExist()
     }
 }

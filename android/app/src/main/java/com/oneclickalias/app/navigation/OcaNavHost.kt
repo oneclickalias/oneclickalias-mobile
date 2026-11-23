@@ -301,13 +301,22 @@ fun OcaNavHost(
                                 onStopOrDispose { }
                             }
                             val state by vm.state.collectAsStateWithLifecycle()
-                            val callbacks = remember(vm) { vm.callbacks() }
+                            val callbacks = remember(vm) {
+                                vm.callbacks().copy(onOpenNewAlias = { homeTab = HomeTab.NewAlias })
+                            }
                             AliasesScreen(state = state, callbacks = callbacks)
                         }
 
                         HomeTab.Account -> {
                             val vm = viewModel {
-                                AccountViewModel(sessions, container.webLinks, container.endpoints.webBase)
+                                AccountViewModel(sessions, container.webLinks, container.endpoints.webBase) {
+                                    sessions.accountStatus()
+                                }
+                            }
+                            // Every start reads the status again: a payment on the website shows after the return.
+                            LifecycleStartEffect(vm) {
+                                vm.load()
+                                onStopOrDispose { }
                             }
                             val state by vm.state.collectAsStateWithLifecycle()
                             AccountScreen(

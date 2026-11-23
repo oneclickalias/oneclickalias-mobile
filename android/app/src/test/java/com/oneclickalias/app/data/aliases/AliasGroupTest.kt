@@ -44,4 +44,11 @@ class AliasGroupTest {
     fun `no aliases, no groups`() {
         assertEquals(emptyList<AliasGroup>(), groupByRecipient(emptyList()))
     }
+
+    @Test
+    fun `a group's key ignores the case of the address`() {
+        val groups = groupByRecipient(listOf(alias("a", "Home@Example.com"), alias("b", "home@example.com")))
+
+        assertEquals("home@example.com", groups.single().key)
+    }
 }

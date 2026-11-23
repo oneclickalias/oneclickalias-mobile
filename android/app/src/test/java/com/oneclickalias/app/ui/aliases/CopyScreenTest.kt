@@ -212,4 +212,39 @@ class CopyScreenTest {
 
         entry(1).assertIsDisplayed()
     }
+
+    @Test
+    fun `first load shows card placeholders instead of a text line`() {
+        show(CopyUiState(loading = true))
+
+        compose.onNode(hasContentDescription("Loading your aliases")).assertIsDisplayed()
+        compose.onNodeWithText("Loading", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `an inbox waiting for confirmation is named under the cards`() {
+        show(CopyUiState(cards = listOf(card(1)), list = ListStatus.Ready, pendingRecipients = 1))
+
+        compose.onNodeWithText("1 inbox is waiting for confirmation", substring = true).performClick()
+
+        assertEquals(listOf("recipients false"), calls)
+    }
+
+    @Test
+    fun `without a recipient the first steps are listed`() {
+        show(CopyUiState(list = ListStatus.Ready, noRecipient = false))
+
+        compose.onNodeWithText("Add an inbox to get started").assertIsDisplayed()
+        compose.onNode(hasContentDescription("Step 1, Add the inbox your aliases forward to")).assertIsDisplayed()
+    }
+
+    @Test
+    fun `an added recipient ticks the first step and leads to the recipients`() {
+        show(CopyUiState(list = ListStatus.Ready, noRecipient = true))
+
+        compose.onNode(hasContentDescription("Step 1, Add the inbox your aliases forward to, done")).assertIsDisplayed()
+        compose.onNodeWithText("Open recipients", ignoreCase = true).performClick()
+
+        assertEquals(listOf("recipients false"), calls)
+    }
 }

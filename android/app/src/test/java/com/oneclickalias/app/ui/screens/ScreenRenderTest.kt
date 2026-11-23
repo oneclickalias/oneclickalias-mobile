@@ -120,7 +120,7 @@ class ScreenRenderTest {
     private fun renderAccountWithAppLock(name: String) = render(name) {
         OcaTheme {
             AccountScreen(
-                state = AccountUiState(),
+                state = AccountUiState(statusLoaded = true),
                 versionName = "0.1.0",
                 onLogout = {},
                 appLock = AppLockState(ready = true, enabled = true, canAuthenticate = true)
@@ -217,7 +217,12 @@ class ScreenRenderTest {
     private fun renderAccountTab(name: String) = render(name) {
         OcaTheme {
             HomeFrame(tab = HomeTab.Account, onSelectTab = {}) {
-                AccountScreen(state = AccountUiState(), versionName = "1.0.0", onLogout = {}, onSignInBrowser = {})
+                AccountScreen(
+                    state = AccountUiState(paidState = PaidState.Active("Dec 10, 2026"), statusLoaded = true),
+                    versionName = "1.0.0",
+                    onLogout = {},
+                    onSignInBrowser = {}
+                )
             }
         }
     }

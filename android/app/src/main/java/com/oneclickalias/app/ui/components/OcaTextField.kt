@@ -38,8 +38,8 @@ import com.oneclickalias.app.ui.theme.OcaTheme
 
 /**
  * Labelled text field like the website's login and register forms: label above,
- * 48dp box with a 2dp border (foreground at 50%, primary when focused,
- * destructive on error), helper or error text below.
+ * 48dp box with a 1dp border (foreground at 50%; 2dp primary when focused,
+ * 2dp destructive on error), helper or error text below.
  *
  * Pass [textStyle] with `GeistMono` for account numbers and aliases.
  * [contentType] and [sensitive] feed Android autofill (e.g. `ContentType.Password`
@@ -87,7 +87,7 @@ fun OcaTextField(
             modifier = fieldModifier
                 .fillMaxWidth()
                 .heightIn(min = 48.dp)
-                .border(2.dp, borderColor, RoundedCornerShape(OcaRadius.md))
+                .border(if (isError || focused) 2.dp else 1.dp, borderColor, RoundedCornerShape(OcaRadius.md))
                 .semantics {
                     contentDescription = label
                     if (isError && supportingText != null) error(supportingText)
