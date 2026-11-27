@@ -4,6 +4,7 @@ import com.oneclickalias.app.data.api.ApiResult
 import com.oneclickalias.app.data.api.NetworkErrorKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AuthMessagesTest {
@@ -19,6 +20,12 @@ class AuthMessagesTest {
         assertEquals(AuthMessages.RATE_LIMITED, login(429, "rate_limited"))
         assertEquals(AuthMessages.SERVER_ERROR, login(500, "internal_error"))
         assertEquals(AuthMessages.UNAVAILABLE, login(503, ApiResult.UNKNOWN_ERROR_CODE))
+    }
+
+    @Test
+    fun `the suspension text says where support is`() {
+        // The app has no support screen; tickets are opened on the website.
+        assertTrue(AuthMessages.ACCOUNT_BLOCKED.contains("oneclickalias.com"))
     }
 
     @Test

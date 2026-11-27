@@ -21,7 +21,8 @@ object AuthMessages {
         "This account was just created. Confirm that you saved its number to finish signing up."
     const val DEVICE_LIMIT =
         "Device limit reached — sign out another device first, or sign out all devices."
-    const val ACCOUNT_BLOCKED = "Your account is suspended — changes are not possible. You can still contact support."
+    const val ACCOUNT_BLOCKED =
+        "Your account is suspended — changes are not possible. You can still contact support on oneclickalias.com."
     const val RATE_LIMITED = "Too many requests — please wait a moment and try again."
     const val SERVER_ERROR = "Server error — please try again later."
     const val UNAVAILABLE = "Service temporarily unavailable — please try again later."
