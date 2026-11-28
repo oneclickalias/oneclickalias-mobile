@@ -74,14 +74,10 @@ object AliasMessages {
         ErrorCode.INVALID_REQUEST,
         ErrorCode.INVALID_DEST_EMAIL,
         ErrorCode.INVALID_ACCOUNT_ID,
-        ErrorCode.INVALID_TICKET_ID,
         ErrorCode.INVALID_TOKEN,
-        ErrorCode.NOT_SHARED,
         ErrorCode.ALREADY_EXISTS,
         ErrorCode.ALREADY_VERIFIED,
         ErrorCode.RECIPIENT_IN_USE,
-        ErrorCode.TICKET_LIMIT_REACHED,
-        ErrorCode.TICKET_CLOSED,
         null -> null
     }
 

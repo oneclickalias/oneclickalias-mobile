@@ -2,5 +2,5 @@
 # ref: what was pinned (tag or commit), commit: the full commit it resolved to.
 # Move to a newer contracts release with:
 #   scripts/sync-api-models.sh --pin vX.Y.Z
-ref=v0.7.0
-commit=09364ff85c7f9dedfe5ee57fe16fef86cc57a418
+ref=v0.12.0
+commit=96c651aed1fbe75ccb2c79f8b42f4137a2e003ef

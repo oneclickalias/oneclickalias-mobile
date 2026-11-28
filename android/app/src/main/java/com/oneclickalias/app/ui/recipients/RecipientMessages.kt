@@ -68,12 +68,8 @@ object RecipientMessages {
         // Not returned by the recipient endpoints.
         ErrorCode.INVALID_ALIAS_ID,
         ErrorCode.INVALID_ACCOUNT_ID,
-        ErrorCode.INVALID_TICKET_ID,
         ErrorCode.RECIPIENT_NOT_VERIFIED,
         ErrorCode.INVALID_TOKEN,
-        ErrorCode.NOT_SHARED,
-        ErrorCode.TICKET_LIMIT_REACHED,
-        ErrorCode.TICKET_CLOSED,
         ErrorCode.ALIAS_GENERATION_FAILED,
         null -> null
     }
